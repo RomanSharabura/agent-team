@@ -15,7 +15,7 @@
 4. Напиши `plan.md` (модуль, шари, файли слайсу, query/command, зміни домену, міграція так/ні) і `tasks.md` (3–8 кроків, кожен з REQ-ID) у папці спеки. Коміт: `plan: SPEC-NNN`.
 5. Виконуй `tasks.md` по черзі за скілом `minimal-api-feature`. Один крок = один коміт `REQ-00x: що зроблено`.
    Маршрут, параметри, коди відповідей і схеми — точно як в `openapi.yaml`.
-6. Тести: integration-тест на кожен Gherkin-сценарій (`tests/DopamineShop.IntegrationTests/Modules/<Module>/`, назва `REQ_00x_<сценарій>`), unit-тести на домен, handler і валідатор (`tests/Modules/<Module>/...UnitTests`), `[Trait("Req", "REQ-00x")]` на кожному тесті вимоги.
+6. Тести (скіл `minimal-api-feature`, розділ «Тести»): integration-тест на кожен Gherkin-сценарій, integration-тести handler'а на справжньому Postgres, unit-тести на домен і валідатор. `[Trait("Req", "REQ-00x")]` на кожному тесті вимоги.
 7. `dotnet-quality-gate`. Червоне → виправ і повтори. Не пропускай, не вимикай тести й аналізатори.
 8. `qa-report.md` у папці спеки: матриця REQ → сценарій → тест → статус.
 9. Push гілки і draft PR за шаблоном `.github/pull_request_template.md` (скіл `github-issue`, розділ PR). Опис починай з `Closes #<issue>`.

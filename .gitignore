@@ -1,3 +1,4 @@
 .env
 *.log
 workspaces/*/memory/
+workspaces/*/repos/

@@ -29,8 +29,15 @@ metadata: { "openclaw": { "requires": { "bins": ["dotnet", "git"] } } }
 7. Не додавай NuGet-пакети, не створюй модулі й не змінюй BuildingBlocks без явного пункту в плані. MediatR заборонений.
 8. Запусти `dotnet-quality-gate`. Червоне → виправ, не пропускай.
 
+## Тести
+- Unit (`tests/Modules/M/...UnitTests`): лише домен і валідатори, без БД.
+- Handler'и: `tests/DopamineShop.IntegrationTests/Modules/M/Handlers/F/`, handler резолвиться з DI через `factory.InScopeAsync<IQueryHandler<FQuery, T>, T>(...)`.
+- HTTP-сценарії: `tests/DopamineShop.IntegrationTests/Modules/M/FTests.cs`, назви `REQ_00x_<сценарій>`.
+- БД — справжній PostgreSQL; кожен тест-клас (`IClassFixture<ApiFactory>`) має власну порожню БД.
+
 ## Відомі пастки
-- SQLite не сортує `DateTimeOffset`: `CreatedAt` уже зберігається як ticks, тож `OrderByDescending(u => u.CreatedAt)` працює. Не змінюй конвертер.
-- Пошук за email: `Email` — value object з конвертером, тому `u.Email.Value` EF не транслює. Пиши `((string)u.Email).Contains(term)`, де `term` уже в lowercase (email нормалізується при створенні). Перевірено на EF Core 10 + SQLite.
+- База — PostgreSQL, схема модуля (`users`), імена в snake_case. Таблиці й колонки створюються міграціями, не руками.
+- Пошук за email: `Email` — value object з конвертером, тому `u.Email.Value` EF не транслює. Пиши `((string)u.Email).Contains(term)`. `LIKE` у Postgres чутливий до регістру, тож `term` переводь у lowercase (email у БД уже lowercase). Перевірено на EF Core 10 + Npgsql.
+- Дати — `timestamptz` в UTC. Не передавай у запити `DateTimeOffset` з ненульовим зсувом.
 - Строго типізований id: порівнюй `u.Id == new UserId(guid)`, а не `u.Id.Value == guid`.
-- Тест-класи з різною кількістю даних мають різні `ApiFactory` (кожен клас — свій `IClassFixture`).
+- Тести, що рахують кількість записів, клади в окремий тест-клас: дані інших класів туди не потраплять.

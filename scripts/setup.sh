@@ -13,6 +13,13 @@ command -v openclaw >/dev/null || npm i -g openclaw@2026.9.8
 echo "== Будую пісочницю"
 docker build -t agent-team/dotnet-sandbox:10 sandbox/
 
+echo "== Мережа і Postgres для пісочниці"
+docker network inspect agent-team >/dev/null 2>&1 || docker network create agent-team
+if ! docker container inspect agent-team-postgres >/dev/null 2>&1; then
+  docker run -d --name agent-team-postgres --network agent-team --restart unless-stopped \
+    -e POSTGRES_PASSWORD="${AGENT_PG_PASSWORD:-postgres}" postgres:17-alpine
+fi
+
 echo "== Мітки в dopamine-shop"
 ./scripts/labels.sh
 
