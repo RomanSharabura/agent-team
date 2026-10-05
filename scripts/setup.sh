@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Одноразове налаштування на машині Roman. Запуск з кореня репо: ./scripts/setup.sh
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+[[ -f .env ]] || { echo "Створи .env з .env.example"; exit 1; }
+set -a; source .env; set +a
+
+node -e 'const [a,b]=process.versions.node.split(".").map(Number); if(!((a===24&&b>=16)||a>=26)){console.error("Потрібен Node >=24.16 (зараз "+process.version+")");process.exit(1)}'
+command -v docker >/dev/null || { echo "Немає docker (Rancher Desktop: увімкни dockerd/moby)"; exit 1; }
+command -v openclaw >/dev/null || npm i -g openclaw@2026.9.8
+
+echo "== Будую пісочницю"
+docker build -t agent-team/dotnet-sandbox:10 sandbox/
+
+echo "== Мітки в dopamine-shop"
+./scripts/labels.sh
+
+echo "== Перевіряю конфіг"
+export OPENCLAW_CONFIG_PATH="$PWD/openclaw.json5"
+openclaw config validate
+
+cat <<MSG
+
+Готово. Додай у ~/.zshrc (або запускай перед openclaw):
+  set -a; source $PWD/.env; set +a
+  export OPENCLAW_CONFIG_PATH="$PWD/openclaw.json5"
+
+Далі: openclaw gateway start, потім напиши боту в Telegram «перевір чергу».
+MSG

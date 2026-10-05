@@ -1,0 +1,65 @@
+// Конфіг команди Spec → PR. Етап 1: lead + dev.
+// Запуск: export OPENCLAW_CONFIG_PATH="$AGENT_TEAM_DIR/openclaw.json5" (див. README).
+// Звірено з документацією OpenClaw 2026.9.8.
+{
+  agents: {
+    ownership: "explicit",
+    defaults: {
+      sandbox: {
+        mode: "all",
+        scope: "agent",
+        workspaceAccess: "rw",
+        docker: {
+          image: "agent-team/dotnet-sandbox:10",
+          // Потрібна мережа: NuGet, git clone/push, GitHub API.
+          network: "bridge",
+        },
+      },
+      heartbeat: { every: "0m" },
+    },
+    entries: {
+      lead: {
+        name: "Lead",
+        workspace: "${AGENT_TEAM_DIR}/workspaces/lead",
+        model: "${LEAD_MODEL}",
+        skills: ["github-issue", "handoff"],
+        subagents: { allowAgents: ["dev"], delegationMode: "prefer" },
+        heartbeat: { every: "30m", isolatedSession: true, activeHours: { start: "08:00", end: "23:00" } },
+        sandbox: { docker: { env: { GH_TOKEN: "${GH_TOKEN_LEAD}" } } },
+        tools: { deny: ["write", "edit", "apply_patch", "browser"] },
+      },
+      dev: {
+        name: "Dev",
+        workspace: "${AGENT_TEAM_DIR}/workspaces/dev",
+        model: "${DEV_MODEL}",
+        skills: ["github-issue", "handoff", "repo-conventions", "minimal-api-feature", "dotnet-quality-gate"],
+        subagents: { allowAgents: [] },
+        sandbox: { docker: { env: { GH_TOKEN: "${GH_TOKEN_DEV}" } } },
+        tools: { deny: ["browser"] },
+      },
+    },
+  },
+  skills: {
+    load: { extraDirs: ["${AGENT_TEAM_DIR}/skills"] },
+  },
+  tools: {
+    agentToAgent: { allow: ["lead", "dev"] },
+  },
+  commands: {
+    ownerAllowFrom: ["telegram:${TELEGRAM_OWNER_ID}"],
+  },
+  bindings: [
+    { agentId: "lead", match: { channel: "telegram", accountId: "*" } },
+  ],
+  channels: {
+    telegram: {
+      accounts: {
+        default: {
+          botToken: "${TELEGRAM_BOT_TOKEN}",
+          dmPolicy: "allowlist",
+          allowFrom: ["tg:${TELEGRAM_OWNER_ID}"],
+        },
+      },
+    },
+  },
+}
