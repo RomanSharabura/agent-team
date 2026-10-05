@@ -2,3 +2,4 @@
 *.log
 workspaces/*/memory/
 workspaces/*/repos/
+workspaces/*/skills/

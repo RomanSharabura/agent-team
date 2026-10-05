@@ -23,6 +23,9 @@ fi
 echo "== Мітки в dopamine-shop"
 ./scripts/labels.sh
 
+echo "== Скіли у воркспейси агентів"
+./scripts/sync-skills.sh
+
 echo "== Ключі моделей в auth-профілі агентів"
 # OpenClaw бере ключ для агентів не зі змінної оточення, а з auth-профілю кожного агента.
 # paste-api-key переписує конфіг, тому даємо йому тимчасову копію, щоб не чіпати openclaw.json5.

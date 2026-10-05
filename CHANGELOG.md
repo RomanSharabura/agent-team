@@ -21,6 +21,7 @@
 - `gh` у пісочниці ставиться з репозиторію Ubuntu замість cli.github.com. (#1)
 
 ### Fixed
+- Скіли були недоступні dev у пісочниці: `skills.load.extraDirs` не потрапляє в контейнер. `scripts/sync-skills.sh` копіює потрібні скіли у `workspaces/<agent>/skills`, які пісочниця бачить як `/workspace/skills`; `setup.sh` викликає його сам. (#5)
 - Агенти не бачили ключа моделі («No route-compatible authentication source»): `setup.sh` кладе `OPENAI_API_KEY`/`ANTHROPIC_API_KEY` в auth-профілі lead і dev; OpenAI за API-ключем іде через рантайм `openclaw`. (#4)
 - Шлюз не стартував: у конфіг додано `gateway.mode: "local"`; README і `setup.sh` запускають `openclaw gateway` замість `gateway start` (той лише для встановленої служби) і описують перший тест без Telegram. (#2)
 - README і `.env.example` описують запуск на Windows через WSL2. (#2)

@@ -8,7 +8,7 @@
 openclaw.json5          конфіг (OPENCLAW_CONFIG_PATH вказує сюди)
 workspaces/lead/        SOUL, AGENTS, USER, HEARTBEAT, MEMORY
 workspaces/dev/         SOUL, AGENTS, USER, TOOLS, MEMORY
-skills/                 спільні скіли (skills.load.extraDirs)
+skills/                 спільні скіли; scripts/sync-skills.sh копіює їх у workspaces/<agent>/skills
 CHANGELOG.md            історія змін; кожен PR додає рядок (перевіряє CI)
 sandbox/Dockerfile      .NET 10 SDK + git + gh + psql для пісочниці
 scripts/setup.sh        одноразове налаштування
@@ -48,6 +48,7 @@ openclaw logs --follow                                # що відбуваєт�
 - `No route-compatible authentication source`: ключ моделі не в auth-профілі агента. Повтори `./scripts/setup.sh` з заповненим `.env` (або `printf "%s\n" "$OPENAI_API_KEY" | openclaw models auth paste-api-key --provider openai --agent lead`, те саме для `dev`).
 - `agents/main/agent` замість `agents/lead/agent` у виводі: у цій вкладці не завантажено `.env` і `OPENCLAW_CONFIG_PATH`.
 - `Gateway not reachable`: шлюз зупинено; запусти `openclaw gateway --verbose` або використай `openclaw agent --local ...`.
+- Агент пише, що скіли недоступні в пісочниці: запусти `./scripts/sync-skills.sh` (після кожного `git pull`, що змінює `skills/`) і перезапусти шлюз.
 
 ## Як дати команді нову задачу
 1. Додай `specs/<NNN-slug>/spec.md` і `openapi.yaml` у `main` dopamine-shop зі `status: ready`.
