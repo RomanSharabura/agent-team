@@ -44,6 +44,11 @@ openclaw logs --follow                                # що відбуваєт�
 ```
 Або напиши боту в Telegram «перевір чергу». Lead візьме issue [#1](https://github.com/Roman-Sharabura/dopamine-shop/issues/1) (SPEC-001), поставить `ai-in-progress` і передасть його dev. Результат: гілка `ai/001-...` і draft PR з міткою `ai-review`.
 
+## Якщо щось не так
+- `No route-compatible authentication source`: ключ моделі не в auth-профілі агента. Повтори `./scripts/setup.sh` з заповненим `.env` (або `printf "%s\n" "$OPENAI_API_KEY" | openclaw models auth paste-api-key --provider openai --agent lead`, те саме для `dev`).
+- `agents/main/agent` замість `agents/lead/agent` у виводі: у цій вкладці не завантажено `.env` і `OPENCLAW_CONFIG_PATH`.
+- `Gateway not reachable`: шлюз зупинено; запусти `openclaw gateway --verbose` або використай `openclaw agent --local ...`.
+
 ## Як дати команді нову задачу
 1. Додай `specs/<NNN-slug>/spec.md` і `openapi.yaml` у `main` dopamine-shop зі `status: ready`.
 2. Створи issue з рядком `Spec: specs/<NNN-slug>` в описі і міткою `ai-ready`.

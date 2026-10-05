@@ -4,6 +4,13 @@
 {
   // Без gateway.mode шлюз відмовляється стартувати (openclaw gateway).
   gateway: { mode: "local", bind: "loopback" },
+  // Ключі API зберігаються не тут, а в auth-профілях кожного агента (scripts/setup.sh).
+  // OpenAI за API-ключем іде через вбудований рантайм OpenClaw, а не через Codex.
+  models: {
+    providers: {
+      openai: { agentRuntime: { id: "openclaw" } },
+    },
+  },
   agents: {
     ownership: "explicit",
     defaults: {
