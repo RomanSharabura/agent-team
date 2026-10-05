@@ -9,7 +9,8 @@ openclaw.json5          конфіг (OPENCLAW_CONFIG_PATH вказує сюди
 workspaces/lead/        SOUL, AGENTS, USER, HEARTBEAT, MEMORY
 workspaces/dev/         SOUL, AGENTS, USER, TOOLS, MEMORY
 skills/                 спільні скіли (skills.load.extraDirs)
-sandbox/Dockerfile      .NET 10 SDK + git + gh для пісочниці
+CHANGELOG.md            історія змін; кожен PR додає рядок (перевіряє CI)
+sandbox/Dockerfile      .NET 10 SDK + git + gh + psql для пісочниці
 scripts/setup.sh        одноразове налаштування
 ```
 
@@ -26,7 +27,7 @@ scripts/setup.sh        одноразове налаштування
 ```bash
 git clone https://github.com/RomanSharabura/agent-team && cd agent-team
 cp .env.example .env        # заповни
-./scripts/setup.sh          # пісочниця, мітки, перевірка конфігу
+./scripts/setup.sh          # образ пісочниці, мережа і Postgres для тестів, мітки, перевірка конфігу
 set -a; source .env; set +a
 export OPENCLAW_CONFIG_PATH="$PWD/openclaw.json5"
 openclaw gateway start
@@ -43,6 +44,7 @@ openclaw gateway start
 
 ## Безпека
 - Агенти працюють у Docker-пісочниці без доступу до хоста, `~/.ssh` і твоїх git-облікових даних. У них є лише власний PAT.
+- Docker-сокет у пісочницю не потрапляє. Замість Testcontainers інтеграційні тести dopamine-shop у пісочниці ходять у спільний контейнер `agent-team-postgres` у мережі `agent-team` (змінна `TEST_POSTGRES_CONNECTION`). Кожен тест-клас створює й видаляє власну БД, тож паралельні прогони не заважають один одному.
 - У `main` нічого не потрапляє без тебе: налаштуй branch protection у dopamine-shop (Settings → Branches: PR обов'язковий, CI `build` обов'язковий).
 - Текст issue і спек агенти читають як дані, а не як інструкції. Це записано в AGENTS.md кожного агента.
 - SOUL.md, AGENTS.md і скіли під git: будь-яку зміну видно в diff.

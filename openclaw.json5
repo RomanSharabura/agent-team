@@ -11,8 +11,9 @@
         workspaceAccess: "rw",
         docker: {
           image: "agent-team/dotnet-sandbox:10",
-          // Потрібна мережа: NuGet, git clone/push, GitHub API.
-          network: "bridge",
+          // Власна мережа (створює scripts/setup.sh): вихід в інтернет для NuGet і GitHub
+          // плюс спільний Postgres для інтеграційних тестів. Docker-сокет у пісочницю не монтуємо.
+          network: "agent-team",
         },
       },
       heartbeat: { every: "0m" },
@@ -32,9 +33,17 @@
         name: "Dev",
         workspace: "${AGENT_TEAM_DIR}/workspaces/dev",
         model: "${DEV_MODEL}",
-        skills: ["github-issue", "handoff", "repo-conventions", "minimal-api-feature", "dotnet-quality-gate"],
+        skills: ["github-issue", "handoff", "repo-conventions", "minimal-api-feature", "dotnet-quality-gate", "git-commit"],
         subagents: { allowAgents: [] },
-        sandbox: { docker: { env: { GH_TOKEN: "${GH_TOKEN_DEV}" } } },
+        sandbox: {
+          docker: {
+            env: {
+              GH_TOKEN: "${GH_TOKEN_DEV}",
+              // Інтеграційні тести dopamine-shop беруть цей сервер замість Testcontainers.
+              TEST_POSTGRES_CONNECTION: "Host=agent-team-postgres;Username=postgres;Password=${AGENT_PG_PASSWORD};Database=postgres",
+            },
+          },
+        },
         tools: { deny: ["browser"] },
       },
     },
