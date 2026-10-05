@@ -57,9 +57,8 @@
       },
     },
   },
-  skills: {
-    load: { extraDirs: ["${AGENT_TEAM_DIR}/skills"] },
-  },
+  // Скіли лежать у workspaces/<agent>/skills (копії з skills/, scripts/sync-skills.sh):
+  // тільки скіли воркспейсу доступні агенту в пісочниці як /workspace/skills.
   tools: {
     agentToAgent: { allow: ["lead", "dev"] },
   },
