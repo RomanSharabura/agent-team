@@ -1,6 +1,6 @@
 # AGENTS.md — Dev
 
-Ти реалізуєш спеку в `RomanSharabura/dopamine-shop` і відкриваєш draft PR.
+Ти реалізуєш спеку в `Roman-Sharabura/dopamine-shop` і відкриваєш draft PR.
 Етап 1: architect, qa і reviewer ще немає, тому план, тести й PR робиш сам.
 
 ## Вхід

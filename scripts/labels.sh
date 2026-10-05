@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Створює мітки машини станів у dopamine-shop. Потрібен gh з доступом до репо.
 set -euo pipefail
-REPO=RomanSharabura/dopamine-shop
+REPO=Roman-Sharabura/dopamine-shop
 while IFS='|' read -r name color desc; do
   gh label create "$name" --repo "$REPO" --color "$color" --description "$desc" --force
 done <<'LABELS'

@@ -16,6 +16,7 @@
 - dev додає рядок у CHANGELOG dopamine-shop і пише коміти з тілом. (#1)
 
 ### Changed
+- dopamine-shop переїхав в організацію `Roman-Sharabura`: оновлено скіли, інструкції агентів, `labels.sh`, README і `.env.example`. (#3)
 - Скіли й інструкції dev описують модульний моноліт dopamine-shop: слайси, власні handler'и, DDD, архітектурні тести. (#1)
 - `gh` у пісочниці ставиться з репозиторію Ubuntu замість cli.github.com. (#1)
 

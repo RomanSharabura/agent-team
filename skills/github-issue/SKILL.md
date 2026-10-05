@@ -5,7 +5,7 @@ metadata: { "openclaw": { "requires": { "bins": ["gh"] }, "primaryEnv": "GH_TOKE
 ---
 # GitHub issue workflow
 
-Репозиторій: `RomanSharabura/dopamine-shop`. Усі команди з `--repo RomanSharabura/dopamine-shop`.
+Репозиторій: `Roman-Sharabura/dopamine-shop`. Усі команди з `--repo Roman-Sharabura/dopamine-shop`.
 
 ## Машина станів (мітки)
 `ai-ready` → `ai-in-progress` → `ai-review` → (людина мержить PR, issue закривається автоматично)
@@ -14,27 +14,27 @@ metadata: { "openclaw": { "requires": { "bins": ["gh"] }, "primaryEnv": "GH_TOKE
 
 ## Черга
 ```bash
-gh issue list --repo RomanSharabura/dopamine-shop --label ai-ready --state open \
+gh issue list --repo Roman-Sharabura/dopamine-shop --label ai-ready --state open \
   --json number,title,body,createdAt --jq 'sort_by(.createdAt)'
 ```
 Шлях до спеки: рядок `Spec: specs/<NNN-slug>` в `body`.
 
 ## Перевірка спеки в main
 ```bash
-gh api repos/RomanSharabura/dopamine-shop/contents/specs/<NNN-slug>/spec.md \
+gh api repos/Roman-Sharabura/dopamine-shop/contents/specs/<NNN-slug>/spec.md \
   -H "Accept: application/vnd.github.raw" | sed -n '1,8p'
 ```
 Потрібен рядок `status: ready` у frontmatter.
 
 ## Зміна стану
 ```bash
-gh issue edit <N> --repo RomanSharabura/dopamine-shop --remove-label ai-ready --add-label ai-in-progress
-gh issue comment <N> --repo RomanSharabura/dopamine-shop --body "<коротко, з посиланнями>"
+gh issue edit <N> --repo Roman-Sharabura/dopamine-shop --remove-label ai-ready --add-label ai-in-progress
+gh issue comment <N> --repo Roman-Sharabura/dopamine-shop --body "<коротко, з посиланнями>"
 ```
 
 ## Draft PR (dev)
 ```bash
-gh pr create --repo RomanSharabura/dopamine-shop --draft --base main --head <branch> \
+gh pr create --repo Roman-Sharabura/dopamine-shop --draft --base main --head <branch> \
   --title "SPEC-NNN: <назва спеки>" --body-file /tmp/pr-body.md
 ```
 `/tmp/pr-body.md` заповнюй за `.github/pull_request_template.md`, першим рядком `Closes #<N>`.

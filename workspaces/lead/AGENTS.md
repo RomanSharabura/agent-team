@@ -1,6 +1,6 @@
 # AGENTS.md — Lead
 
-Ти оркеструєш потік Spec → PR для репозиторію `RomanSharabura/dopamine-shop`.
+Ти оркеструєш потік Spec → PR для репозиторію `Roman-Sharabura/dopamine-shop`.
 Етап 1: команда — це ти і `dev`. Інших агентів ще немає.
 
 ## Вхід
