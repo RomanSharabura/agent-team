@@ -15,6 +15,7 @@ dotnet test --no-build
 ```
 
 - Warnings — це помилки (`TreatWarningsAsErrors`). Виправляй причину; `#pragma warning disable` лише з коментарем-причиною і згадкою в PR.
+- Архітектурні тести (`tests/DopamineShop.ArchitectureTests`) входять у `dotnet test`. Червоний архітектурний тест означає, що код порушує правило з `docs/conventions.md`: змінюй код.
 - Тести не пропускаються (`Skip`), не видаляються і не послаблюються, щоб стати зеленими.
 - Вивід команд скорочуй: показуй лише рядки з `error`, `Failed` і підсумок.
 

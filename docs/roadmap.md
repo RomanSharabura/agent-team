@@ -13,4 +13,5 @@
 ## Відмінності від початкового дизайну
 - GitHub замість Azure DevOps: issues і мітки замість work items і тегів, `gh` замість ADO MCP.
 - Конфіг OpenClaw 2026.9.8 використовує `agents.entries` (а не `agents.list`) і `subagents.allowAgents` для делегування.
+- dopamine-shop — модульний моноліт (Clean Architecture + vertical slices + DDD) без MediatR; правила перевіряють архітектурні тести, тож агентам не треба тримати їх у промпті.
 - На етапі 1 dev сам пише plan.md, tasks.md, тести і draft PR. Ці кроки переходять до architect, qa і reviewer пізніше.
