@@ -15,6 +15,7 @@ scripts/setup.sh        одноразове налаштування
 ```
 
 ## Що потрібно на машині
+- **Windows:** усе запускай у WSL2 (Ubuntu 24.04) з увімкненою WSL-інтеграцією Rancher Desktop. Репо клонуй у `~/src`, не в `/mnt/c`. Git Bash і PowerShell не підходять для `setup.sh` і монтувань пісочниці.
 - Node **24.16+** (OpenClaw 2026.9.8 на Node 22 не ставиться).
 - Rancher Desktop з рушієм **dockerd (moby)**, щоб працювала команда `docker`.
 - API-ключ моделі (у `.env`).

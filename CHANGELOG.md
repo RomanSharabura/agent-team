@@ -21,3 +21,4 @@
 
 ### Fixed
 - Шлюз не стартував: у конфіг додано `gateway.mode: "local"`; README і `setup.sh` запускають `openclaw gateway` замість `gateway start` (той лише для встановленої служби) і описують перший тест без Telegram. (#2)
+- README і `.env.example` описують запуск на Windows через WSL2. (#2)
