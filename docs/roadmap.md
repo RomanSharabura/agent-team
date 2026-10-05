@@ -4,7 +4,7 @@
 
 | Етап | Агенти і скіли | Результат |
 | --- | --- | --- |
-| 1 | lead + dev; github-issue, handoff, repo-conventions, minimal-api-feature, dotnet-quality-gate; Docker-пісочниця | Issue `ai-ready` → draft PR з кодом і тестами для SPEC-001 |
+| 1 | lead + dev; github-issue, handoff, repo-conventions, minimal-api-feature, dotnet-quality-gate, git-commit; Docker-пісочниця | Issue `ai-ready` → draft PR з кодом і тестами для SPEC-001 |
 | 2 | + qa (spec-to-tests, xunit-tests, контракт з openapi.yaml), петля qa → dev (макс. 2) | Тести пише незалежний агент, qa-report.md |
 | 3 | + ba (spec-validate), architect (spec-to-plan, adr-writer), reviewer (spec-trace, pr-review-checklist, pr-create) | Повний потік Spec → PR з матрицею REQ → тест → код |
 | 4 | Paperclip: бюджет на агента, $ на PR; Stryker; memory MCP на C# | Команда працює за чергою, вартість видно |

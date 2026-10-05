@@ -9,6 +9,7 @@ openclaw.json5          конфіг (OPENCLAW_CONFIG_PATH вказує сюди
 workspaces/lead/        SOUL, AGENTS, USER, HEARTBEAT, MEMORY
 workspaces/dev/         SOUL, AGENTS, USER, TOOLS, MEMORY
 skills/                 спільні скіли (skills.load.extraDirs)
+CHANGELOG.md            історія змін; кожен PR додає рядок (перевіряє CI)
 sandbox/Dockerfile      .NET 10 SDK + git + gh + psql для пісочниці
 scripts/setup.sh        одноразове налаштування
 ```

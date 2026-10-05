@@ -33,7 +33,7 @@
         name: "Dev",
         workspace: "${AGENT_TEAM_DIR}/workspaces/dev",
         model: "${DEV_MODEL}",
-        skills: ["github-issue", "handoff", "repo-conventions", "minimal-api-feature", "dotnet-quality-gate"],
+        skills: ["github-issue", "handoff", "repo-conventions", "minimal-api-feature", "dotnet-quality-gate", "git-commit"],
         subagents: { allowAgents: [] },
         sandbox: {
           docker: {
