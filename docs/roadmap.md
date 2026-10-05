@@ -4,8 +4,8 @@
 
 | Етап | Агенти і скіли | Результат |
 | --- | --- | --- |
-| 1 | lead + dev; github-issue, handoff, repo-conventions, minimal-api-feature, dotnet-quality-gate, git-commit; Docker-пісочниця | Issue `ai-ready` → draft PR з кодом і тестами для SPEC-001 |
-| 2 | + qa (spec-to-tests, xunit-tests, контракт з openapi.yaml), петля qa → dev (макс. 2) | Тести пише незалежний агент, qa-report.md |
+| 1 ✅ | lead + dev; github-issue, handoff, repo-conventions, minimal-api-feature, dotnet-quality-gate, git-commit; Docker-пісочниця | Issue `ai-ready` → draft PR з кодом і тестами для SPEC-001 |
+| 2 ✅ | + qa (spec-to-tests з перевіркою контракту openapi.yaml), петля qa → dev (макс. 2) | Тести пише незалежний агент, qa-report.md |
 | 3 | + ba (spec-validate), architect (spec-to-plan, adr-writer), reviewer (spec-trace, pr-review-checklist, pr-create) | Повний потік Spec → PR з матрицею REQ → тест → код |
 | 4 | Paperclip: бюджет на агента, $ на PR; Stryker; memory MCP на C# | Команда працює за чергою, вартість видно |
 | 5 | Скіли для фронтенду (React + TS, Chrome-розширення MV3) | Адмінка і web-клієнт через той самий потік |
@@ -14,4 +14,6 @@
 - GitHub замість Azure DevOps: issues і мітки замість work items і тегів, `gh` замість ADO MCP.
 - Конфіг OpenClaw 2026.9.8 використовує `agents.entries` (а не `agents.list`) і `subagents.allowAgents` для делегування.
 - dopamine-shop — модульний моноліт (Clean Architecture + vertical slices + DDD) без MediatR; правила перевіряють архітектурні тести, тож агентам не треба тримати їх у промпті.
-- На етапі 1 dev сам пише plan.md, tasks.md, тести і draft PR. Ці кроки переходять до architect, qa і reviewer пізніше.
+- На етапі 1 dev сам пише plan.md, tasks.md, тести і draft PR. З етапу 2 qa-report.md і тести за сценаріями й контрактом пише qa; plan.md, tasks.md і PR перейдуть до architect і reviewer на етапі 3.
+- Окремого скіла `xunit-tests` немає: unit-тести на домен і валідатори пише dev за `minimal-api-feature`, а qa перевіряє поведінку через HTTP і контракт (`spec-to-tests`). Stryker перенесено на етап 4.
+- qa пушить у ту саму гілку `ai/*`, що й dev, і не змінює `src/`. Червоні тести qa лишаються в гілці як доказ знахідки, поки dev не виправить код.

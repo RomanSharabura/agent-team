@@ -1,4 +1,4 @@
-// Конфіг команди Spec → PR. Етап 1: lead + dev.
+// Конфіг команди Spec → PR. Етап 2: lead + dev + qa.
 // Запуск: export OPENCLAW_CONFIG_PATH="$AGENT_TEAM_DIR/openclaw.json5" (див. README).
 // Звірено з документацією OpenClaw 2026.9.8.
 {
@@ -33,7 +33,7 @@
         workspace: "${AGENT_TEAM_DIR}/workspaces/lead",
         model: "${LEAD_MODEL}",
         skills: ["github-issue", "handoff"],
-        subagents: { allowAgents: ["dev"], delegationMode: "prefer" },
+        subagents: { allowAgents: ["dev", "qa"], delegationMode: "prefer" },
         heartbeat: { every: "30m", isolatedSession: true, activeHours: { start: "08:00", end: "23:00" } },
         sandbox: { docker: { env: { GH_TOKEN: "${GH_TOKEN_LEAD}" } } },
         tools: { deny: ["write", "edit", "apply_patch", "browser"] },
@@ -55,12 +55,29 @@
         },
         tools: { deny: ["browser"] },
       },
+      // Незалежна перевірка гілки dev: тести за сценаріями спеки й контрактом, qa-report.md.
+      qa: {
+        name: "QA",
+        workspace: "${AGENT_TEAM_DIR}/workspaces/qa",
+        model: "${QA_MODEL}",
+        skills: ["github-issue", "handoff", "repo-conventions", "spec-to-tests", "dotnet-quality-gate", "git-commit"],
+        subagents: { allowAgents: [] },
+        sandbox: {
+          docker: {
+            env: {
+              GH_TOKEN: "${GH_TOKEN_QA}",
+              TEST_POSTGRES_CONNECTION: "Host=agent-team-postgres;Username=postgres;Password=${AGENT_PG_PASSWORD};Database=postgres",
+            },
+          },
+        },
+        tools: { deny: ["browser"] },
+      },
     },
   },
   // Скіли лежать у workspaces/<agent>/skills (копії з skills/, scripts/sync-skills.sh):
   // тільки скіли воркспейсу доступні агенту в пісочниці як /workspace/skills.
   tools: {
-    agentToAgent: { allow: ["lead", "dev"] },
+    agentToAgent: { allow: ["lead", "dev", "qa"] },
   },
   commands: {
     ownerAllowFrom: ["telegram:${TELEGRAM_OWNER_ID}"],
