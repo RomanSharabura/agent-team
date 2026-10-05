@@ -23,6 +23,23 @@ fi
 echo "== Мітки в dopamine-shop"
 ./scripts/labels.sh
 
+echo "== Ключі моделей в auth-профілі агентів"
+# OpenClaw бере ключ для агентів не зі змінної оточення, а з auth-профілю кожного агента.
+# paste-api-key переписує конфіг, тому даємо йому тимчасову копію, щоб не чіпати openclaw.json5.
+[[ -n "${OPENAI_API_KEY:-}${ANTHROPIC_API_KEY:-}" ]] || { echo "У .env немає ні OPENAI_API_KEY, ні ANTHROPIC_API_KEY"; exit 1; }
+tmpdir="$(mktemp -d)"
+cp openclaw.json5 "$tmpdir/openclaw.json5"
+for agent in lead dev; do
+  if [[ -n "${OPENAI_API_KEY:-}" ]]; then
+    printf "%s\n" "$OPENAI_API_KEY" | OPENCLAW_CONFIG_PATH="$tmpdir/openclaw.json5" openclaw models auth paste-api-key --provider openai --agent "$agent"
+  fi
+  if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
+    printf "%s\n" "$ANTHROPIC_API_KEY" | OPENCLAW_CONFIG_PATH="$tmpdir/openclaw.json5" openclaw models auth paste-api-key --provider anthropic --agent "$agent"
+  fi
+done
+rm -f "$tmpdir"/openclaw.json5*
+rmdir "$tmpdir"
+
 echo "== Перевіряю конфіг"
 export OPENCLAW_CONFIG_PATH="$PWD/openclaw.json5"
 openclaw config validate
