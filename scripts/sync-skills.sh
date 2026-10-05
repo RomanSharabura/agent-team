@@ -8,6 +8,7 @@ cd "$(dirname "$0")/.."
 declare -A AGENT_SKILLS=(
   [lead]="github-issue handoff"
   [dev]="github-issue handoff repo-conventions minimal-api-feature dotnet-quality-gate git-commit"
+  [qa]="github-issue handoff repo-conventions spec-to-tests dotnet-quality-gate git-commit"
 )
 
 for agent in "${!AGENT_SKILLS[@]}"; do

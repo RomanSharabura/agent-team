@@ -1,6 +1,6 @@
 ---
 name: dotnet-quality-gate
-description: Run build (warnings as errors), format check and all tests for dopamine-shop; must be green before any push.
+description: Run build (warnings as errors), format check and all tests for dopamine-shop; dev must be fully green before any push, qa must have green build and format.
 metadata: { "openclaw": { "requires": { "bins": ["dotnet"] } } }
 ---
 # .NET quality gate
@@ -19,5 +19,7 @@ dotnet test --no-build
 - Архітектурні тести (`tests/DopamineShop.ArchitectureTests`) входять у `dotnet test`. Червоний архітектурний тест означає, що код порушує правило з `docs/conventions.md`: змінюй код.
 - Тести не пропускаються (`Skip`), не видаляються і не послаблюються, щоб стати зеленими.
 - Вивід команд скорочуй: показуй лише рядки з `error`, `Failed` і підсумок.
+
+Для qa: `build` і `format` мають бути зелені перед push, а червоні тести, що показують знахідки, пушаться разом з `verdict: FAIL`.
 
 Результат у конверт: `gate: green` або `gate: red` з першими 20 рядками помилок.

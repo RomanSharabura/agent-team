@@ -8,6 +8,7 @@
 ## [Unreleased]
 
 ### Added
+- Етап 2: агент `qa` і скіл `spec-to-tests`. qa незалежно пише HTTP- і контрактні тести за спекою, веде `qa-report.md` і повертає задачу dev при FAIL, не більше двох разів.
 - Етап 1: агенти `lead` і `dev`, конфіг `openclaw.json5` (перевірено на OpenClaw 2026.9.8).
 - Скіли `github-issue`, `handoff`, `repo-conventions`, `minimal-api-feature`, `dotnet-quality-gate`.
 - Docker-пісочниця з .NET 10 SDK, git, gh і psql; `scripts/setup.sh` і `scripts/labels.sh`.
