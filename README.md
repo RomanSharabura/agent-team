@@ -1,6 +1,6 @@
 # agent-team
 
-Команда агентів [OpenClaw](https://docs.openclaw.ai), яка бере специфікацію з [dopamine-shop](https://github.com/RomanSharabura/dopamine-shop) і віддає Pull Request. Людина робить дві речі: пише спеку і мержить PR.
+Команда агентів [OpenClaw](https://docs.openclaw.ai), яка бере специфікацію з [dopamine-shop](https://github.com/Roman-Sharabura/dopamine-shop) і віддає Pull Request. Людина робить дві речі: пише спеку і мержить PR.
 
 **Етап 1 (зараз):** `lead` + `dev`. Lead бере issue з міткою `ai-ready`, dev у Docker-пісочниці пише план, код і тести та відкриває draft PR. План наступних етапів — у [docs/roadmap.md](docs/roadmap.md).
 
@@ -19,7 +19,8 @@ scripts/setup.sh        одноразове налаштування
 - Node **24.16+** (OpenClaw 2026.9.8 на Node 22 не ставиться).
 - Rancher Desktop з рушієм **dockerd (moby)**, щоб працювала команда `docker`.
 - API-ключ моделі (у `.env`).
-- Два fine-grained PAT на GitHub лише для `RomanSharabura/dopamine-shop`:
+- Два fine-grained PAT на GitHub лише для `Roman-Sharabura/dopamine-shop`:
+  - Resource owner: організація **Roman-Sharabura**. В організації має бути дозволено fine-grained токени: Settings → Personal access tokens → Settings → «Allow access via fine-grained personal access tokens». Якщо там увімкнено погодження, підтверди обидва токени в Settings → Personal access tokens → Pending requests.
   - `GH_TOKEN_LEAD`: Issues — read/write, Contents — read.
   - `GH_TOKEN_DEV`: Contents, Pull requests, Issues — read/write.
 - Telegram-бот від @BotFather і твій числовий id (наприклад, через @userinfobot).
@@ -41,7 +42,7 @@ openclaw agents list                                  # lead і dev з потр�
 openclaw agent --agent lead --message "перевір чергу"   # без Telegram
 openclaw logs --follow                                # що відбувається
 ```
-Або напиши боту в Telegram «перевір чергу». Lead візьме issue [#1](https://github.com/RomanSharabura/dopamine-shop/issues/1) (SPEC-001), поставить `ai-in-progress` і передасть його dev. Результат: гілка `ai/001-...` і draft PR з міткою `ai-review`.
+Або напиши боту в Telegram «перевір чергу». Lead візьме issue [#1](https://github.com/Roman-Sharabura/dopamine-shop/issues/1) (SPEC-001), поставить `ai-in-progress` і передасть його dev. Результат: гілка `ai/001-...` і draft PR з міткою `ai-review`.
 
 ## Як дати команді нову задачу
 1. Додай `specs/<NNN-slug>/spec.md` і `openapi.yaml` у `main` dopamine-shop зі `status: ready`.
