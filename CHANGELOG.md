@@ -18,3 +18,6 @@
 ### Changed
 - Скіли й інструкції dev описують модульний моноліт dopamine-shop: слайси, власні handler'и, DDD, архітектурні тести. (#1)
 - `gh` у пісочниці ставиться з репозиторію Ubuntu замість cli.github.com. (#1)
+
+### Fixed
+- Шлюз не стартував: у конфіг додано `gateway.mode: "local"`; README і `setup.sh` запускають `openclaw gateway` замість `gateway start` (той лише для встановленої служби) і описують перший тест без Telegram. (#2)

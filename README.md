@@ -30,9 +30,17 @@ cp .env.example .env        # заповни
 ./scripts/setup.sh          # образ пісочниці, мережа і Postgres для тестів, мітки, перевірка конфігу
 set -a; source .env; set +a
 export OPENCLAW_CONFIG_PATH="$PWD/openclaw.json5"
-openclaw gateway start
+openclaw gateway --verbose  # шлюз у цьому терміналі; Ctrl+C зупиняє
 ```
-Напиши боту: «перевір чергу». Lead візьме issue [#1](https://github.com/RomanSharabura/dopamine-shop/issues/1) (SPEC-001) і передасть його dev.
+
+## Перший тест
+В іншому терміналі (з тими самими змінними оточення):
+```bash
+openclaw agents list                                  # lead і dev з потрібними моделями
+openclaw agent --agent lead --message "перевір чергу"   # без Telegram
+openclaw logs --follow                                # що відбувається
+```
+Або напиши боту в Telegram «перевір чергу». Lead візьме issue [#1](https://github.com/RomanSharabura/dopamine-shop/issues/1) (SPEC-001), поставить `ai-in-progress` і передасть його dev. Результат: гілка `ai/001-...` і draft PR з міткою `ai-review`.
 
 ## Як дати команді нову задачу
 1. Додай `specs/<NNN-slug>/spec.md` і `openapi.yaml` у `main` dopamine-shop зі `status: ready`.

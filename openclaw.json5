@@ -2,6 +2,8 @@
 // Запуск: export OPENCLAW_CONFIG_PATH="$AGENT_TEAM_DIR/openclaw.json5" (див. README).
 // Звірено з документацією OpenClaw 2026.9.8.
 {
+  // Без gateway.mode шлюз відмовляється стартувати (openclaw gateway).
+  gateway: { mode: "local", bind: "loopback" },
   agents: {
     ownership: "explicit",
     defaults: {
