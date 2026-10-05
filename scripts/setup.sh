@@ -33,5 +33,7 @@ cat <<MSG
   set -a; source $PWD/.env; set +a
   export OPENCLAW_CONFIG_PATH="$PWD/openclaw.json5"
 
-Далі: openclaw gateway start, потім напиши боту в Telegram «перевір чергу».
+Далі: openclaw gateway --verbose, а в іншому терміналі
+  openclaw agent --agent lead --message "перевір чергу"
+(або напиши боту в Telegram).
 MSG
