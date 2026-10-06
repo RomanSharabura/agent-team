@@ -24,6 +24,7 @@
 - Автор комітів dev і qa задано змінними `GIT_AUTHOR_*` і `GIT_COMMITTER_*` у пісочниці: qa на SPEC-002 не зміг закомітити `qa-report.md` без `git config`.
 
 ### Changed
+- Чат з lead перенесено з Telegram у Slack (Socket Mode, плагін `@openclaw/slack`, ставить `setup.sh`). Маніфест застосунку в `slack/app-manifest.json`, нові змінні `.env`: `SLACK_APP_TOKEN`, `SLACK_BOT_TOKEN`, `SLACK_OWNER_ID`. Telegram лишився закоментованим у конфігу.
 - dev підписує коміти поштою GitHub-акаунта `dopamine-dev-bot`, щоб PR і коміти агентів ішли від бота, а Roman міг їх апрувити.
 - dopamine-shop переїхав в організацію `Roman-Sharabura`: оновлено скіли, інструкції агентів, `labels.sh`, README і `.env.example`. (#3)
 - Скіли й інструкції dev описують модульний моноліт dopamine-shop: слайси, власні handler'и, DDD, архітектурні тести. (#1)

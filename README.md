@@ -30,7 +30,7 @@ scripts/setup.sh        одноразове налаштування
   - `GH_TOKEN_ARCHITECT`: Contents — read/write.
   - `GH_TOKEN_DEV`: Contents, Pull requests, Issues — read/write.
   - `GH_TOKEN_QA`: Contents, Pull requests — read/write, Issues — read.
-- Telegram-бот від @BotFather і твій числовий id (наприклад, через @userinfobot).
+- Slack-застосунок у твоєму workspace (див. [Slack](#slack)). Telegram необов'язковий і вимкнений у конфігу.
 
 ## Запуск
 ```bash
@@ -46,10 +46,21 @@ openclaw gateway --verbose  # шлюз у цьому терміналі; Ctrl+C 
 В іншому терміналі (з тими самими змінними оточення):
 ```bash
 openclaw agents list                                  # lead, ba, architect, dev і qa з потрібними моделями
-openclaw agent --agent lead --message "перевір чергу"   # без Telegram
+openclaw agent --agent lead --message "перевір чергу"   # без Slack
 openclaw logs --follow                                # що відбувається
 ```
-Або напиши боту в Telegram «перевір чергу». Lead візьме issue [#1](https://github.com/Roman-Sharabura/dopamine-shop/issues/1) (SPEC-001), поставить `ai-in-progress` і передасть його ba. Результат: коментар ba в issue, гілка `ai/001-...` з `plan.md` і `tasks.md` від architect, PR з тестами, `qa-report.md` від qa, review від lead і мітка `ai-review`.
+Або напиши боту в Slack в особисті «перевір чергу». Lead візьме issue [#1](https://github.com/Roman-Sharabura/dopamine-shop/issues/1) (SPEC-001), поставить `ai-in-progress` і передасть його ba. Результат: коментар ba в issue, гілка `ai/001-...` з `plan.md` і `tasks.md` від architect, PR з тестами, `qa-report.md` від qa, review від lead і мітка `ai-review`.
+
+## Slack
+Lead слухає особисті повідомлення в Slack через Socket Mode: шлюз сам відкриває з'єднання, тож публічна адреса для WSL не потрібна.
+1. [api.slack.com/apps](https://api.slack.com/apps/new) → **Create New App** → **From a manifest** → твій workspace → встав [`slack/app-manifest.json`](slack/app-manifest.json) → **Create**.
+2. **Basic Information → App-Level Tokens → Generate Token and Scopes**: scope `connections:write`, збережи. Токен `xapp-...` іде в `SLACK_APP_TOKEN`.
+3. **Install App → Install to Workspace**. **Bot User OAuth Token** `xoxb-...` іде в `SLACK_BOT_TOKEN`.
+4. У Slack: свій профіль → ⋮ → **Copy member ID** (`U...`) іде в `SLACK_OWNER_ID`. Лише цей користувач може писати боту.
+5. `./scripts/setup.sh` (поставить плагін `@openclaw/slack`), потім перезапусти шлюз.
+6. Перевір: `openclaw channels list` показує `Slack default: installed, configured, enabled`. Відкрий застосунок у Slack (Apps → Agent Team) і напиши «перевір чергу».
+
+Щоб повернути Telegram, розкоментуй блок `channels.telegram` в `openclaw.json5` і заповни `TELEGRAM_*` у `.env`.
 
 ## Адмінка web/admin (етап 5)
 1. `git pull && ./scripts/sync-skills.sh`
@@ -90,7 +101,7 @@ dev і qa мають частину скілів з [dotnet/skills](https://gith
 ## Як дати команді нову задачу
 1. Додай `specs/<NNN-slug>/spec.md` і `openapi.yaml` у `main` dopamine-shop зі `status: ready` (для спеки лише на адмінку `openapi.yaml` не потрібен, див. «Адмінка web/admin»).
 2. Створи issue з рядком `Spec: specs/<NNN-slug>` в описі і міткою `ai-ready`.
-3. Lead підхопить його на heartbeat (кожні 30 хв, 08:00–23:00) або за командою в Telegram.
+3. Lead підхопить його на heartbeat (кожні 30 хв, 08:00–23:00) або за командою в Slack.
 
 ## Мітки (машина станів)
 `ai-ready` → `ai-in-progress` (ba → architect → dev → qa → review lead) → `ai-review` → approve і merge людиною. Побічні: `ai-needs-input`, `ai-blocked`.

@@ -133,21 +133,37 @@
   tools: {
     agentToAgent: { allow: ["lead", "ba", "architect", "dev", "qa"] },
   },
+  // Канал Slack — окремий плагін (його пакет ставить scripts/setup.sh).
+  plugins: {
+    entries: { slack: { enabled: true } },
+  },
   commands: {
-    ownerAllowFrom: ["telegram:${TELEGRAM_OWNER_ID}"],
+    ownerAllowFrom: ["slack:${SLACK_OWNER_ID}"],
   },
   bindings: [
+    { agentId: "lead", match: { channel: "slack", accountId: "*" } },
     { agentId: "lead", match: { channel: "telegram", accountId: "*" } },
   ],
   channels: {
-    telegram: {
-      accounts: {
-        default: {
-          botToken: "${TELEGRAM_BOT_TOKEN}",
-          dmPolicy: "allowlist",
-          allowFrom: ["tg:${TELEGRAM_OWNER_ID}"],
-        },
-      },
+    // Slack через Socket Mode: шлюз сам тримає з'єднання, публічна адреса не потрібна.
+    slack: {
+      enabled: true,
+      mode: "socket",
+      appToken: { source: "env", provider: "default", id: "SLACK_APP_TOKEN" },
+      botToken: { source: "env", provider: "default", id: "SLACK_BOT_TOKEN" },
+      dmPolicy: "allowlist",
+      allowFrom: ["${SLACK_OWNER_ID}"],
     },
+    // Telegram вимкнено. Щоб повернути, розкоментуй блок, заповни TELEGRAM_* у .env
+    // і додай "telegram:${TELEGRAM_OWNER_ID}" у commands.ownerAllowFrom.
+    // telegram: {
+    //   accounts: {
+    //     default: {
+    //       botToken: "${TELEGRAM_BOT_TOKEN}",
+    //       dmPolicy: "allowlist",
+    //       allowFrom: ["tg:${TELEGRAM_OWNER_ID}"],
+    //     },
+    //   },
+    // },
   },
 }
