@@ -8,6 +8,7 @@
 ## [Unreleased]
 
 ### Added
+- Code review від lead: скіл `pr-review` (чекліст за спекою, архітектурою, безпекою й тестами). Після PASS від qa lead лишає в PR review з коментарями до рядків; 🔴 blocking повертає dev у спільній петлі з qa (разом не більше двох повернень), 🟡 nit лишає людині. Чистий PR lead переводить з draft у ready і додає Roman у рев'юери; мержить лише людина.
 - Етап 2: агент `qa` і скіл `spec-to-tests`. qa незалежно пише HTTP- і контрактні тести за спекою, веде `qa-report.md` і повертає задачу dev при FAIL, не більше двох разів.
 - Етап 1: агенти `lead` і `dev`, конфіг `openclaw.json5` (перевірено на OpenClaw 2026.9.8).
 - Скіли `github-issue`, `handoff`, `repo-conventions`, `minimal-api-feature`, `dotnet-quality-gate`.

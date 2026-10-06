@@ -2,7 +2,7 @@
 
 Команда агентів [OpenClaw](https://docs.openclaw.ai), яка бере специфікацію з [dopamine-shop](https://github.com/Roman-Sharabura/dopamine-shop) і віддає Pull Request. Людина робить дві речі: пише спеку і мержить PR.
 
-**Етап 2 (зараз):** `lead` + `dev` + `qa`. Lead бере issue з міткою `ai-ready`, dev у Docker-пісочниці пише план, код і тести та відкриває draft PR. Потім qa незалежно пише тести за сценаріями спеки й контрактом `openapi.yaml` і веде `qa-report.md`. Якщо qa знайшов розбіжність, lead повертає задачу dev, не більше двох разів. План наступних етапів — у [docs/roadmap.md](docs/roadmap.md).
+**Етап 2 (зараз):** `lead` + `dev` + `qa`. Lead бере issue з міткою `ai-ready`, dev у Docker-пісочниці пише план, код і тести та відкриває draft PR. Потім qa незалежно пише тести за сценаріями спеки й контрактом `openapi.yaml` і веде `qa-report.md`. Після PASS lead робить code review: коментарі до рядків у PR, 🔴 blocking повертає dev, 🟡 nit лишає тобі. Якщо qa чи review знайшли проблему, lead повертає задачу dev, разом не більше двох разів. Чистий PR lead переводить з draft у ready і додає тебе в рев'юери; мержиш ти. План наступних етапів — у [docs/roadmap.md](docs/roadmap.md).
 
 ```text
 openclaw.json5          конфіг (OPENCLAW_CONFIG_PATH вказує сюди)
@@ -23,7 +23,7 @@ scripts/setup.sh        одноразове налаштування
 - API-ключ моделі (у `.env`).
 - Три fine-grained PAT на GitHub лише для `Roman-Sharabura/dopamine-shop` (краще від окремого акаунта-бота, тоді PR агентів можна апрувити):
   - Resource owner: організація **Roman-Sharabura**. В організації має бути дозволено fine-grained токени: Settings → Personal access tokens → Settings → «Allow access via fine-grained personal access tokens». Якщо там увімкнено погодження, підтверди всі токени в Settings → Personal access tokens → Pending requests.
-  - `GH_TOKEN_LEAD`: Issues — read/write, Contents — read.
+  - `GH_TOKEN_LEAD`: Issues, Pull requests — read/write (review і draft → ready), Contents, Commit statuses — read.
   - `GH_TOKEN_DEV`: Contents, Pull requests, Issues — read/write.
   - `GH_TOKEN_QA`: Contents, Pull requests — read/write, Issues — read.
 - Telegram-бот від @BotFather і твій числовий id (наприклад, через @userinfobot).
@@ -45,7 +45,12 @@ openclaw agents list                                  # lead, dev і qa з по�
 openclaw agent --agent lead --message "перевір чергу"   # без Telegram
 openclaw logs --follow                                # що відбувається
 ```
-Або напиши боту в Telegram «перевір чергу». Lead візьме issue [#1](https://github.com/Roman-Sharabura/dopamine-shop/issues/1) (SPEC-001), поставить `ai-in-progress` і передасть його dev. Результат: гілка `ai/001-...`, draft PR з тестами й `qa-report.md` від qa і мітка `ai-review`.
+Або напиши боту в Telegram «перевір чергу». Lead візьме issue [#1](https://github.com/Roman-Sharabura/dopamine-shop/issues/1) (SPEC-001), поставить `ai-in-progress` і передасть його dev. Результат: гілка `ai/001-...`, PR з тестами, `qa-report.md` від qa, review від lead і мітка `ai-review`.
+
+## Увімкнути review від lead
+1. `git pull && ./scripts/sync-skills.sh`
+2. Дай `GH_TOKEN_LEAD` права Pull requests — read/write і Commit statuses — read (на GitHub: Settings → Developer settings → Fine-grained tokens → токен lead → Edit). Токен не змінюється, `.env` чіпати не треба.
+3. Перезапусти шлюз.
 
 ## Перехід з етапу 1
 1. `git pull && ./scripts/sync-skills.sh`
@@ -71,7 +76,7 @@ dev і qa мають частину скілів з [dotnet/skills](https://gith
 3. Lead підхопить його на heartbeat (кожні 30 хв, 08:00–23:00) або за командою в Telegram.
 
 ## Мітки (машина станів)
-`ai-ready` → `ai-in-progress` → `ai-review` → merge людиною. Побічні: `ai-needs-input`, `ai-blocked`.
+`ai-ready` → `ai-in-progress` (dev → qa → review lead) → `ai-review` → approve і merge людиною. Побічні: `ai-needs-input`, `ai-blocked`.
 
 ## Безпека
 - Агенти працюють у Docker-пісочниці без доступу до хоста, `~/.ssh` і твоїх git-облікових даних. У них є лише власний PAT.

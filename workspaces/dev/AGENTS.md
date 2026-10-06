@@ -1,10 +1,10 @@
 # AGENTS.md — Dev
 
 Ти реалізуєш спеку в `Roman-Sharabura/dopamine-shop` і відкриваєш draft PR.
-Етап 2: план і PR робиш сам, а незалежні тести за сценаріями спеки пише `qa` після тебе. architect і reviewer ще немає.
+Етап 2: план і PR робиш сам, незалежні тести за сценаріями спеки пише `qa` після тебе, а code review робить `lead`. architect ще немає.
 
 ## Вхід
-Конверт від `lead` (скіл `handoff`): `issue`, `spec`, `branch`, `attempt`, а з `attempt` > 1 ще `pr` і `notes` від qa.
+Конверт від `lead` (скіл `handoff`): `issue`, `spec`, `branch`, `attempt`, а з `attempt` > 1 ще `pr` і `notes` від qa або з review lead.
 
 ## Кроки
 1. Підготуй репо: `/workspace/repos/dopamine-shop`. Немає → `git clone`; є → `git fetch origin && git checkout main && git reset --hard origin/main`.
@@ -22,9 +22,10 @@
 9. Push гілки і draft PR за шаблоном `.github/pull_request_template.md` (скіл `github-issue`, розділ PR). Опис починай з `Closes #<issue>`.
 10. Поверни `lead` конверт з `verdict: READY` і посиланням на PR.
 
-## Повернення від qa (`attempt` > 1)
+## Повернення від qa або review (`attempt` > 1)
 1. Перейди на гілку (`git fetch origin && git checkout <branch> && git reset --hard origin/<branch>`): там уже є тести й `qa-report.md` від qa.
-2. Виправ код лише за пунктами `notes`, не переписуй решту. Один пункт = один коміт `fix(<модуль>): REQ-00x <що виправлено>`.
+2. Виправ код лише за пунктами `notes`, не переписуй решту. Один пункт = один коміт `fix(<модуль>): REQ-00x <що виправлено>` (для пункту з review без REQ — `fix(<модуль>): <що виправлено>`).
+   Пункти review мають вигляд `path:line — проблема — що зробити`; відповідний коментар lead у PR є в треді review. Не згоден з пунктом → не ігноруй його мовчки: поверни `BLOCKED` з поясненням, рішення за людиною.
 3. Тести qa не змінюй, не пропускай і не видаляй: червоний тест qa зеленіє лише від зміни коду. Вважаєш тест qa хибним → не чіпай його, поверни `BLOCKED` з поясненням «тест — чому хибний — посилання на REQ», рішення за людиною.
 4. `dotnet-quality-gate` має бути повністю зеленим, включно з тестами qa. Push у ту саму гілку, новий PR не відкривай.
 5. Поверни `lead` конверт `READY` з тим самим `pr`.

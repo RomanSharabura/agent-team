@@ -7,7 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 declare -A AGENT_SKILLS=(
-  [lead]="github-issue handoff"
+  [lead]="github-issue handoff pr-review"
   [dev]="github-issue handoff repo-conventions minimal-api-feature dotnet-quality-gate git-commit"
   [qa]="github-issue handoff repo-conventions spec-to-tests dotnet-quality-gate git-commit"
 )
