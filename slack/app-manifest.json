@@ -1,7 +1,7 @@
 {
   "display_information": {
     "name": "Agent Team",
-    "description": "Lead команди агентів OpenClaw (Spec → PR)"
+    "description": "Lead of the OpenClaw agent team (Spec → PR)"
   },
   "features": {
     "bot_user": { "display_name": "agent-lead", "always_online": true },
@@ -13,7 +13,7 @@
     "slash_commands": [
       {
         "command": "/openclaw",
-        "description": "Повідомлення для lead",
+        "description": "Message for lead",
         "should_escape": false
       }
     ]

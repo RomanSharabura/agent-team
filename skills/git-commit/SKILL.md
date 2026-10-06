@@ -5,41 +5,42 @@ metadata: { "openclaw": { "requires": { "bins": ["git"] } } }
 ---
 # Git commit
 
-Читач коміту має зрозуміти зміну без diff. CI (`PR hygiene`) перевіряє тему і тіло кожного коміту та запис у CHANGELOG.
+A reader of the commit must understand the change without the diff. CI (`PR hygiene`) checks the subject and body of every commit and the CHANGELOG entry.
+Write commit subjects and bodies in English.
 
-## Формат
+## Format
 ```text
-<тип>(<модуль>): <REQ-ID якщо є> <що зроблено>      ≤ 72 символи
+<type>(<module>): <REQ-ID if any> <what was done>      ≤ 72 characters
 
-- що змінилось і навіщо (по пункту на кожну помітну зміну)
-- назви класів, ендпоінтів, міграцій — як у коді
-- що НЕ змінювалось, якщо це неочевидно
+- what changed and why (one item per notable change)
+- names of classes, endpoints, migrations — as in the code
+- what did NOT change, if not obvious
 
 Refs: SPEC-NNN, #<issue>
 ```
-Типи: `feat`, `fix`, `refactor`, `test`, `docs`, `build`, `ci`, `chore`.
+Types: `feat`, `fix`, `refactor`, `test`, `docs`, `build`, `ci`, `chore`.
 
-## Як комітити
-Пиши повідомлення у файл і передавай через `-F`, щоб тіло не загубилось:
+## How to commit
+Write the message to a file and pass it via `-F` so the body is not lost:
 ```bash
 cat > /tmp/commit-msg <<'MSG'
-feat(users): REQ-003 пошук користувачів за email
+feat(users): REQ-003 search users by email
 
-- ListUsersHandler фільтрує за підрядком email; term переводиться в lowercase
-- ListUsersValidator обмежує search 320 символами, як в openapi.yaml
-- інтеграційний тест REQ_003_search_by_email_case_insensitive
+- ListUsersHandler filters by email substring; term is lowercased
+- ListUsersValidator limits search to 320 characters, as in openapi.yaml
+- integration test REQ_003_search_by_email_case_insensitive
 
 Refs: SPEC-001, #1
 MSG
 git commit -F /tmp/commit-msg --trailer "Agent: $AGENT_ID"
 ```
-`--trailer` додає в кінець рядок `Agent: dev` (чи `qa`, `architect`): так у GitHub видно, який агент зробив коміт, хоча всі комітять від бота. Автора не змінюй через `git config`: ім'я на кшталт `dopamine-dev-bot (dev)` уже задане змінними `GIT_AUTHOR_*`.
+`--trailer` appends the line `Agent: dev` (or `qa`, `architect`): this shows on GitHub which agent made the commit, even though all commit as the bot. Do not change the author via `git config`: a name like `dopamine-dev-bot (dev)` is already set by the `GIT_AUTHOR_*` variables.
 
 ## CHANGELOG
-- Один рядок на PR у `## [Unreleased]` у розділ `Added` / `Changed` / `Fixed` / `Removed` / `Security`.
-- Пиши, що змінилось для користувача API чи розробника, а не як: «Список користувачів в адмінці з пагінацією, пошуком за email і фільтром за статусом. (SPEC-001, #1)».
-- Не редагуй старі рядки й розділи релізів.
+- One line per PR in `## [Unreleased]` under `Added` / `Changed` / `Fixed` / `Removed` / `Security`.
+- Write what changed for the API user or developer, not how: "Admin user list with pagination, email search and status filter. (SPEC-001, #1)".
+- Do not edit old lines or release sections.
 
-## Не можна
-- Коміт без тіла, `wip`, `fix`, `update` як уся тема.
-- `--amend` і force-push після того, як PR відкрито: нові зміни — нові коміти.
+## Not allowed
+- A commit without a body; `wip`, `fix`, `update` as the whole subject.
+- `--amend` and force-push after the PR is open: new changes go in new commits.

@@ -1,11 +1,11 @@
-# Скіли .NET від Microsoft
+# .NET skills from Microsoft
 
-Копія скілів з https://github.com/dotnet/skills (MIT, див. LICENSE), без змін.
-Оновлення: `./scripts/update-dotnet-skills.sh [commit]`, потім `./scripts/sync-skills.sh`.
+Unmodified copy of skills from https://github.com/dotnet/skills (MIT, see LICENSE).
+Update: `./scripts/update-dotnet-skills.sh [commit]`, then `./scripts/sync-skills.sh`.
 
-Коміт: `c7cc6617da6c6cadc4ebe7b06926a02caa108e82`
+Commit: `c7cc6617da6c6cadc4ebe7b06926a02caa108e82`
 
-| Скіл | Плагін |
+| Skill | Plugin |
 |---|---|
 | `csharp-refactoring` | `dotnet` |
 | `dotnet-webapi` | `dotnet-aspnetcore` |

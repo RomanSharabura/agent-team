@@ -1,5 +1,5 @@
 {
-  "_doc": "Ліміти витрат команди, див. README «Бюджети». Доба й місяць — за UTC. usd — оцінка OpenClaw за цінами моделей; tokens — input + output + cacheWrite (без дешевих cacheRead), страховка, коли ціни моделі OpenClaw не знає.",
+  "_doc": "Team spending limits, see README \"Budgets\". Day and month are in UTC. usd is OpenClaw's estimate from model prices; tokens is input + output + cacheWrite (excluding cheap cacheRead), a fallback when OpenClaw does not know the model's prices.",
   "warnAt": 0.8,
   "team": {
     "daily": { "usd": 20, "tokens": 25000000 },
