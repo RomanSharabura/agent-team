@@ -126,6 +126,7 @@ Lead слухає особисті повідомлення в Slack через 
 4. Перезапусти шлюз.
 
 ## Якщо щось не так
+- Control UI просить «Gateway secret», або `openclaw logs` пише `requires credentials`: у `.env` немає `OPENCLAW_GATEWAY_TOKEN`. Запусти `./scripts/setup.sh` (згенерує токен), `set -a; source .env; set +a` і перезапусти шлюз. Потім `openclaw dashboard --no-open` дає посилання з одноразовим входом. `openclaw doctor` на `openclaw.json5` не запускай: він переписує файл.
 - `No route-compatible authentication source`: ключ моделі не в auth-профілі агента. Повтори `./scripts/setup.sh` з заповненим `.env` (або `printf "%s\n" "$OPENAI_API_KEY" | openclaw models auth paste-api-key --provider openai --agent lead`, те саме для `ba`, `architect`, `dev` і `qa`).
 - `agents/main/agent` замість `agents/lead/agent` у виводі: у цій вкладці не завантажено `.env` і `OPENCLAW_CONFIG_PATH`.
 - `Gateway not reachable`: шлюз зупинено; запусти `openclaw gateway --verbose` або використай `openclaw agent --local ...`.
