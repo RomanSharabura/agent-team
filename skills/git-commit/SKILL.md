@@ -31,8 +31,9 @@ feat(users): REQ-003 пошук користувачів за email
 
 Refs: SPEC-001, #1
 MSG
-git commit -F /tmp/commit-msg
+git commit -F /tmp/commit-msg --trailer "Agent: $AGENT_ID"
 ```
+`--trailer` додає в кінець рядок `Agent: dev` (чи `qa`, `architect`): так у GitHub видно, який агент зробив коміт, хоча всі комітять від бота. Автора не змінюй через `git config`: ім'я на кшталт `dopamine-dev-bot (dev)` уже задане змінними `GIT_AUTHOR_*`.
 
 ## CHANGELOG
 - Один рядок на PR у `## [Unreleased]` у розділ `Added` / `Changed` / `Fixed` / `Removed` / `Security`.
