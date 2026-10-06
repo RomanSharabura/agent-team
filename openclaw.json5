@@ -50,6 +50,11 @@
               GH_TOKEN: "${GH_TOKEN_DEV}",
               // Інтеграційні тести dopamine-shop беруть цей сервер замість Testcontainers.
               TEST_POSTGRES_CONNECTION: "Host=agent-team-postgres;Username=postgres;Password=${AGENT_PG_PASSWORD};Database=postgres",
+              // Автор комітів задано тут, а не лише в TOOLS.md: без нього git commit падає, якщо агент забув git config.
+              GIT_AUTHOR_NAME: "dopamine-dev-bot",
+              GIT_AUTHOR_EMAIL: "roma.sharabura+bot@gmail.com",
+              GIT_COMMITTER_NAME: "dopamine-dev-bot",
+              GIT_COMMITTER_EMAIL: "roma.sharabura+bot@gmail.com",
             },
           },
         },
@@ -67,6 +72,11 @@
             env: {
               GH_TOKEN: "${GH_TOKEN_QA}",
               TEST_POSTGRES_CONNECTION: "Host=agent-team-postgres;Username=postgres;Password=${AGENT_PG_PASSWORD};Database=postgres",
+              // Автор комітів задано тут, а не лише в TOOLS.md: без нього git commit падає, якщо агент забув git config.
+              GIT_AUTHOR_NAME: "dopamine-dev-bot",
+              GIT_AUTHOR_EMAIL: "roma.sharabura+bot@gmail.com",
+              GIT_COMMITTER_NAME: "dopamine-dev-bot",
+              GIT_COMMITTER_EMAIL: "roma.sharabura+bot@gmail.com",
             },
           },
         },
