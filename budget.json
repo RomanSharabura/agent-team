@@ -1,0 +1,15 @@
+{
+  "_doc": "Ліміти витрат команди, див. README «Бюджети». Доба й місяць — за UTC. usd — оцінка OpenClaw за цінами моделей; tokens — input + output + cacheWrite (без дешевих cacheRead), страховка, коли ціни моделі OpenClaw не знає.",
+  "warnAt": 0.8,
+  "team": {
+    "daily": { "usd": 20, "tokens": 25000000 },
+    "monthly": { "usd": 150 }
+  },
+  "agents": {
+    "lead": { "daily": { "usd": 3, "tokens": 4000000 } },
+    "ba": { "daily": { "usd": 1.5, "tokens": 2000000 } },
+    "architect": { "daily": { "usd": 3, "tokens": 4000000 } },
+    "dev": { "daily": { "usd": 10, "tokens": 12000000 } },
+    "qa": { "daily": { "usd": 5, "tokens": 6000000 } }
+  }
+}

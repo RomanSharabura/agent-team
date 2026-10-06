@@ -36,4 +36,12 @@ description: Envelope format for passing work between team agents (lead to ba, a
 
 Lead передає конверт через `sessions_spawn` з `agentId` (`ba`, `architect`, `dev` або `qa`) і конвертом як текстом завдання. Агент відповідає конвертом останнім повідомленням.
 
+## Бюджет
+Перед кожним `sessions_spawn` lead читає знімок сторожа бюджету:
+```bash
+jq '{updatedAt, paused, over: [.checks[] | select(.level == "over") | .scope]}' /workspace/state/budget.json
+```
+- `paused: true`, або в `over` є `team` чи агент, якому передаєш, → не передавай. Мітка `ai-blocked` і коментар-блокер з конвертом, як коли недоступний `sessions_spawn`, з причиною «бюджет: <що перевищено>». Людині не пиши: сторож уже повідомив Roman.
+- Файлу немає → передавай (сторож ще не запускався), але в наступному повідомленні людині згадай, що облік витрат не працює.
+
 Одразу після `sessions_spawn` lead викликає `sessions_yield` і так чекає конверт. Не завершуй хід без yield: тоді результат прийде окремим ходом, у якому OpenClaw може не дати `sessions_spawn`, і наступну передачу зробити не вийде. Після yield хід продовжується з тими самими інструментами, що були на момент spawn. Не опитуй `subagents` чи `sessions_list` у циклі.
