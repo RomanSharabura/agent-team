@@ -21,6 +21,7 @@
 - Скіли .NET від Microsoft з [dotnet/skills](https://github.com/dotnet/skills) у `vendor/dotnet-skills/`: dev отримує `dotnet-webapi`, `optimizing-ef-core-queries`, `csharp-refactoring`, `run-tests`; qa — `run-tests`, `test-anti-patterns`, `assertion-quality`, `test-gap-analysis`. Правила dopamine-shop мають пріоритет. Оновлення — `scripts/update-dotnet-skills.sh`.
 
 ### Fixed
+- lead не міг передати задачу architect: Tool Search ховав `sessions_spawn`, і пошук його не знаходив. `tools.toolSearch: false` — агенти бачать усі свої інструменти напряму.
 - Автор комітів dev і qa задано змінними `GIT_AUTHOR_*` і `GIT_COMMITTER_*` у пісочниці: qa на SPEC-002 не зміг закомітити `qa-report.md` без `git config`.
 
 ### Changed

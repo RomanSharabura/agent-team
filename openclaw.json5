@@ -132,6 +132,10 @@
   // тільки скіли воркспейсу доступні агенту в пісочниці як /workspace/skills.
   tools: {
     agentToAgent: { allow: ["lead", "ba", "architect", "dev", "qa"] },
+    // Tool Search (типово увімкнений) ховає схеми інструментів за tool_search, а пошук працює
+    // лише англійською. На SPEC-003 lead після PASS від ba не знайшов sessions_spawn і зупинився.
+    // Інструментів у нас мало, тож даємо моделі прямі схеми.
+    toolSearch: false,
   },
   // Канал Slack — окремий плагін (його пакет ставить scripts/setup.sh).
   plugins: {
