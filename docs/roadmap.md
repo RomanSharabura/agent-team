@@ -7,7 +7,7 @@
 | 1 ✅ | lead + dev; github-issue, handoff, repo-conventions, minimal-api-feature, dotnet-quality-gate, git-commit; Docker-пісочниця | Issue `ai-ready` → draft PR з кодом і тестами для SPEC-001 |
 | 2 ✅ | + qa (spec-to-tests з перевіркою контракту openapi.yaml), петля qa → dev (макс. 2); code review від lead (pr-review) | Тести пише незалежний агент, qa-report.md; PR приходить людині вже з review |
 | 3 ✅ | + ba (spec-validate), architect (spec-to-plan, adr-writer); spec-trace і pr-create не окремі (матрицю REQ веде qa, PR відкриває dev, review робить lead) | Повний потік Spec → PR: спека перевірена до роботи, план з REQ-ID у гілці до коду |
-| 4 | Paperclip: бюджет на агента, $ на PR; Stryker; memory MCP на C# | Команда працює за чергою, вартість видно |
+| 4 ◐ | Черга без ручного старту ✅ (heartbeat + `pipeline-resume`, ціль спринту через milestone); бюджети ✅ (`budget.json`, сторож `budget-guard`, пауза heartbeat); ранковий брифінг lead ✅. Далі: Stryker; memory MCP на C# | Команда працює за чергою, вартість видно |
 | 5 ◐ | Адмінка ✅: Node 24 у пісочниці, скіли `admin-ui-feature` і `admin-ui-gate`, UI-розділи в `spec-validate`, `spec-to-plan`, `spec-to-tests`, `pr-review`. Далі: Chrome-розширення MV3 | Адмінка (перша спека — SPEC-003) і web-клієнт через той самий потік |
 
 ## Відмінності від початкового дизайну
@@ -21,4 +21,5 @@
 - qa пушить у ту саму гілку `ai/*`, що й dev, і не змінює `src/`. Червоні тести qa лишаються в гілці як доказ знахідки, поки dev не виправить код.
 - ba не пише в issue сам: його вердикт і питання публікує lead (коментар «Spec validation» і мітка `ai-needs-input`). Так ba досить токена на читання, а всі зміни стану issue робить один агент.
 - `clean-arch-plan` не окремий скіл: мапу шарів дають `docs/conventions.md`, ADR і архітектурні тести dopamine-shop, а architect читає їх через `repo-conventions`. Чернетки ADR architect додає зі статусом `proposed` у ту саму гілку; приймає їх людина разом з PR.
+- Paperclip замінено нативним обліком OpenClaw (`openclaw gateway usage-cost`) і сторожем бюджету: Paperclip бачить і обмежує лише запуски, які стартує сам, а ланцюжок агентів у нас іде всередині OpenClaw. «Компанію» з ціллю спринту замінює milestone у GitHub, дашборд — Control UI (Usage) і ранковий брифінг. Бюджет діє з точністю до кроку агента: сторож не перериває крок, що вже йде.
 - Петлі qa і review повертають задачу лише dev: architect після dev не викликається. Якщо план виявився хибним, dev повертає `BLOCKED`, і рішення за людиною.

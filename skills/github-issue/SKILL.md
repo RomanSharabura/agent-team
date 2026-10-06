@@ -18,9 +18,12 @@ metadata: { "openclaw": { "requires": { "bins": ["gh"] }, "primaryEnv": "GH_TOKE
 В issue одночасно лише одна мітка `ai-*`.
 
 ## Черга
+Порядок: спершу issues цілі спринту (найближчий за `due_on` відкритий milestone), далі решта; всередині — найстаріше першим.
 ```bash
 gh issue list --repo Roman-Sharabura/dopamine-shop --label ai-ready --state open \
-  --json number,title,body,createdAt --jq 'sort_by(.createdAt)'
+  --json number,title,body,createdAt,milestone > /tmp/queue.json
+SPRINT=$(gh api "repos/Roman-Sharabura/dopamine-shop/milestones?state=open&sort=due_on&direction=asc" --jq '.[0].title // ""')
+jq --arg s "$SPRINT" 'sort_by((if .milestone.title == $s and $s != "" then 0 else 1 end), .createdAt)' /tmp/queue.json
 ```
 Шлях до спеки: рядок `Spec: specs/<NNN-slug>` в `body`.
 
