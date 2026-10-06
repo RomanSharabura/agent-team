@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Копіює спільні скіли з skills/ у workspaces/<agent>/skills/.
+# Копіює спільні скіли з skills/ і скіли .NET від Microsoft з vendor/dotnet-skills/
+# у workspaces/<agent>/skills/.
 # Пісочниця бачить лише воркспейс агента (/workspace/skills), а не skills/ у корені репо.
 # Запускай після кожного git pull, що змінює skills/ (setup.sh робить це сам).
 set -euo pipefail
@@ -11,6 +12,14 @@ declare -A AGENT_SKILLS=(
   [qa]="github-issue handoff repo-conventions spec-to-tests dotnet-quality-gate git-commit"
 )
 
+# Скіли з github.com/dotnet/skills (scripts/update-dotnet-skills.sh). Наші скіли й
+# docs/conventions.md dopamine-shop мають пріоритет, див. workspaces/<agent>/AGENTS.md.
+declare -A DOTNET_SKILLS=(
+  [lead]=""
+  [dev]="dotnet-webapi optimizing-ef-core-queries csharp-refactoring run-tests platform-detection filter-syntax"
+  [qa]="run-tests platform-detection filter-syntax test-anti-patterns assertion-quality test-analysis-extensions test-gap-analysis"
+)
+
 for agent in "${!AGENT_SKILLS[@]}"; do
   dest="workspaces/$agent/skills"
   mkdir -p "$dest"
@@ -18,5 +27,8 @@ for agent in "${!AGENT_SKILLS[@]}"; do
   for skill in ${AGENT_SKILLS[$agent]}; do
     cp -r "skills/$skill" "$dest/$skill"
   done
-  echo "$agent: ${AGENT_SKILLS[$agent]}"
+  for skill in ${DOTNET_SKILLS[$agent]}; do
+    cp -r "vendor/dotnet-skills/$skill" "$dest/$skill"
+  done
+  echo "$agent: ${AGENT_SKILLS[$agent]} ${DOTNET_SKILLS[$agent]}"
 done

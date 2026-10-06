@@ -15,6 +15,7 @@
 - Спільний PostgreSQL `agent-team-postgres` у мережі `agent-team` для інтеграційних тестів у пісочниці dev, без Docker-сокета. (#1)
 - CHANGELOG і CI-перевірки: запис у CHANGELOG і опис у кожному коміті PR. (#1)
 - dev додає рядок у CHANGELOG dopamine-shop і пише коміти з тілом. (#1)
+- Скіли .NET від Microsoft з [dotnet/skills](https://github.com/dotnet/skills) у `vendor/dotnet-skills/`: dev отримує `dotnet-webapi`, `optimizing-ef-core-queries`, `csharp-refactoring`, `run-tests`; qa — `run-tests`, `test-anti-patterns`, `assertion-quality`, `test-gap-analysis`. Правила dopamine-shop мають пріоритет. Оновлення — `scripts/update-dotnet-skills.sh`.
 
 ### Fixed
 - Автор комітів dev і qa задано змінними `GIT_AUTHOR_*` і `GIT_COMMITTER_*` у пісочниці: qa на SPEC-002 не зміг закомітити `qa-report.md` без `git config`.
