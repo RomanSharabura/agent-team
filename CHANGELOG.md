@@ -8,6 +8,7 @@ Commits: subject ≤ 72 characters and a body with a list of changes (template `
 ## [Unreleased]
 
 ### Changed
+- Every agent's AGENTS.md has an explicit Language rule: always write in English, even when the session history, memory notes or older GitHub comments are in Ukrainian. README troubleshooting explains how to start a fresh session.
 - The repository is in English: README, docs, CHANGELOG, skills, agent instructions (AGENTS.md, SOUL.md, USER.md), scripts, and CI messages. Agents now write GitHub comments, PRs, commits, reports, and Slack messages in English. `pipeline-resume` still recognizes the older Ukrainian status comments. After pulling: `scripts/sync-skills.sh`, restart the gateway.
 
 ### Fixed
