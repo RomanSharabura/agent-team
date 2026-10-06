@@ -12,6 +12,7 @@ Commits: subject ≤ 72 characters and a body with a list of changes (template `
 - The repository is in English: README, docs, CHANGELOG, skills, agent instructions (AGENTS.md, SOUL.md, USER.md), scripts, and CI messages. Agents now write GitHub comments, PRs, commits, reports, and Slack messages in English. `pipeline-resume` still recognizes the older Ukrainian status comments. After pulling: `scripts/sync-skills.sh`, restart the gateway.
 
 ### Fixed
+- `git pull` no longer fails on agents' lessons: `workspaces/<agent>/MEMORY.md` is no longer tracked by git (agents write to it at runtime). Starting copies live in `templates/memory/`, and `scripts/sync-skills.sh` creates a missing MEMORY.md from them without touching an existing one.
 - lead no longer stops the queue when the budget snapshot `workspaces/lead/state/budget.json` does not exist yet: it keeps working and reminds Roman once to run `./scripts/automations.sh`. `automations.sh` now runs the guard once right away, so the snapshot exists without waiting 10 minutes.
 - The Control UI (`openclaw dashboard`) and `openclaw logs` work: the gateway takes its token from `OPENCLAW_GATEWAY_TOKEN`, and `setup.sh` generates it in `.env` if empty.
 
