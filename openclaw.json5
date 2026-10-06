@@ -38,7 +38,8 @@
         heartbeat: { every: "30m", isolatedSession: true, activeHours: { start: "08:00", end: "23:00" } },
         // Review пише коментарі через gh api, тож write/edit йому не потрібні.
         sandbox: { docker: { env: { GH_TOKEN: "${GH_TOKEN_LEAD}" } } },
-        tools: { deny: ["write", "edit", "apply_patch", "browser"] },
+        // Передачі між агентами: spawn і yield потрібні lead явно, незалежно від профілю інструментів.
+        tools: { alsoAllow: ["sessions_spawn", "sessions_yield", "subagents"], deny: ["write", "edit", "apply_patch", "browser"] },
       },
       // Перевіряє спеку до будь-якої роботи: PASS або QUESTIONS. Лише читає, тож write/edit не має.
       ba: {
