@@ -8,6 +8,7 @@
 ## [Unreleased]
 
 ### Added
+- Етап 3: агенти `ba` і `architect`, скіли `spec-validate`, `spec-to-plan` і `adr-writer`. ba перевіряє спеку до роботи і повертає PASS або питання (lead ставить `ai-needs-input` з коментарем «Spec validation»); architect створює гілку з `plan.md` і `tasks.md`, де кожен крок має REQ-ID, і за потреби чернетку ADR. dev виконує готовий план замість того, щоб писати його сам. Нові змінні `.env`: `BA_MODEL`, `ARCHITECT_MODEL`, `GH_TOKEN_BA`, `GH_TOKEN_ARCHITECT`.
 - Code review від lead: скіл `pr-review` (чекліст за спекою, архітектурою, безпекою й тестами). Після PASS від qa lead лишає в PR review з коментарями до рядків; 🔴 blocking повертає dev у спільній петлі з qa (разом не більше двох повернень), 🟡 nit лишає людині. Чистий PR lead переводить з draft у ready і додає Roman у рев'юери; мержить лише людина.
 - Етап 2: агент `qa` і скіл `spec-to-tests`. qa незалежно пише HTTP- і контрактні тести за спекою, веде `qa-report.md` і повертає задачу dev при FAIL, не більше двох разів.
 - Етап 1: агенти `lead` і `dev`, конфіг `openclaw.json5` (перевірено на OpenClaw 2026.9.8).

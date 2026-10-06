@@ -2,11 +2,13 @@
 
 Команда агентів [OpenClaw](https://docs.openclaw.ai), яка бере специфікацію з [dopamine-shop](https://github.com/Roman-Sharabura/dopamine-shop) і віддає Pull Request. Людина робить дві речі: пише спеку і мержить PR.
 
-**Етап 2 (зараз):** `lead` + `dev` + `qa`. Lead бере issue з міткою `ai-ready`, dev у Docker-пісочниці пише план, код і тести та відкриває draft PR. Потім qa незалежно пише тести за сценаріями спеки й контрактом `openapi.yaml` і веде `qa-report.md`. Після PASS lead робить code review: коментарі до рядків у PR, 🔴 blocking повертає dev, 🟡 nit лишає тобі. Якщо qa чи review знайшли проблему, lead повертає задачу dev, разом не більше двох разів. Чистий PR lead переводить з draft у ready і додає тебе в рев'юери; мержиш ти. План наступних етапів — у [docs/roadmap.md](docs/roadmap.md).
+**Етап 3 (зараз):** `lead` + `ba` + `architect` + `dev` + `qa`. Lead бере issue з міткою `ai-ready` і спершу віддає спеку ba: той перевіряє EARS, сценарії й узгодженість з `openapi.yaml` і повертає PASS або питання (тоді issue отримує `ai-needs-input` з коментарем «Spec validation»). Після PASS architect створює гілку `ai/<issue>-<slug>` з `plan.md` і `tasks.md` (кожен крок з REQ-ID), а для нових архітектурних рішень — чернетку ADR. dev у Docker-пісочниці виконує `tasks.md`, пише код і тести та відкриває draft PR. Потім qa незалежно пише тести за сценаріями спеки й контрактом `openapi.yaml` і веде `qa-report.md`. Після PASS lead робить code review: коментарі до рядків у PR, 🔴 blocking повертає dev, 🟡 nit лишає тобі. Якщо qa чи review знайшли проблему, lead повертає задачу dev, разом не більше двох разів. Чистий PR lead переводить з draft у ready і додає тебе в рев'юери; мержиш ти. План наступних етапів — у [docs/roadmap.md](docs/roadmap.md).
 
 ```text
 openclaw.json5          конфіг (OPENCLAW_CONFIG_PATH вказує сюди)
 workspaces/lead/        SOUL, AGENTS, USER, HEARTBEAT, MEMORY
+workspaces/ba/          SOUL, AGENTS, USER, TOOLS, MEMORY
+workspaces/architect/   SOUL, AGENTS, USER, TOOLS, MEMORY
 workspaces/dev/         SOUL, AGENTS, USER, TOOLS, MEMORY
 workspaces/qa/          SOUL, AGENTS, USER, TOOLS, MEMORY
 skills/                 спільні скіли; scripts/sync-skills.sh копіює їх у workspaces/<agent>/skills
@@ -21,9 +23,11 @@ scripts/setup.sh        одноразове налаштування
 - Node **24.16+** (OpenClaw 2026.9.8 на Node 22 не ставиться).
 - Rancher Desktop з рушієм **dockerd (moby)**, щоб працювала команда `docker`.
 - API-ключ моделі (у `.env`).
-- Три fine-grained PAT на GitHub лише для `Roman-Sharabura/dopamine-shop` (краще від окремого акаунта-бота, тоді PR агентів можна апрувити):
+- П'ять токенів GitHub (по одному на агента; від акаунта-бота можна один classic PAT зі scope `repo` в усіх п'яти змінних). Якщо fine-grained PAT, то лише на `Roman-Sharabura/dopamine-shop` (краще від окремого акаунта-бота, тоді PR агентів можна апрувити):
   - Resource owner: організація **Roman-Sharabura**. В організації має бути дозволено fine-grained токени: Settings → Personal access tokens → Settings → «Allow access via fine-grained personal access tokens». Якщо там увімкнено погодження, підтверди всі токени в Settings → Personal access tokens → Pending requests.
   - `GH_TOKEN_LEAD`: Issues, Pull requests — read/write (review і draft → ready), Contents, Commit statuses — read.
+  - `GH_TOKEN_BA`: Contents — read.
+  - `GH_TOKEN_ARCHITECT`: Contents — read/write.
   - `GH_TOKEN_DEV`: Contents, Pull requests, Issues — read/write.
   - `GH_TOKEN_QA`: Contents, Pull requests — read/write, Issues — read.
 - Telegram-бот від @BotFather і твій числовий id (наприклад, через @userinfobot).
@@ -41,11 +45,17 @@ openclaw gateway --verbose  # шлюз у цьому терміналі; Ctrl+C 
 ## Перший тест
 В іншому терміналі (з тими самими змінними оточення):
 ```bash
-openclaw agents list                                  # lead, dev і qa з потрібними моделями
+openclaw agents list                                  # lead, ba, architect, dev і qa з потрібними моделями
 openclaw agent --agent lead --message "перевір чергу"   # без Telegram
 openclaw logs --follow                                # що відбувається
 ```
-Або напиши боту в Telegram «перевір чергу». Lead візьме issue [#1](https://github.com/Roman-Sharabura/dopamine-shop/issues/1) (SPEC-001), поставить `ai-in-progress` і передасть його dev. Результат: гілка `ai/001-...`, PR з тестами, `qa-report.md` від qa, review від lead і мітка `ai-review`.
+Або напиши боту в Telegram «перевір чергу». Lead візьме issue [#1](https://github.com/Roman-Sharabura/dopamine-shop/issues/1) (SPEC-001), поставить `ai-in-progress` і передасть його ba. Результат: коментар ba в issue, гілка `ai/001-...` з `plan.md` і `tasks.md` від architect, PR з тестами, `qa-report.md` від qa, review від lead і мітка `ai-review`.
+
+## Перехід на етап 3 (ba і architect)
+1. `git pull && ./scripts/sync-skills.sh`
+2. У `.env` додай `BA_MODEL`, `ARCHITECT_MODEL`, `GH_TOKEN_BA` і `GH_TOKEN_ARCHITECT` (див. `.env.example`). Токен бота з `GH_TOKEN_DEV` підходить для обох.
+3. Ключ моделі для нових агентів: `./scripts/setup.sh` (кладе ключ в auth-профілі всіх п'яти) або вручну на тимчасовій копії конфігу, як у розділі «Перехід з етапу 1», для `--agent ba` і `--agent architect`.
+4. `openclaw config validate`, потім перезапусти шлюз. Пісочниці ba й architect створяться при першому запуску.
 
 ## Увімкнути review від lead
 1. `git pull && ./scripts/sync-skills.sh`
@@ -59,7 +69,7 @@ openclaw logs --follow                                # що відбуваєт�
 4. Перезапусти шлюз.
 
 ## Якщо щось не так
-- `No route-compatible authentication source`: ключ моделі не в auth-профілі агента. Повтори `./scripts/setup.sh` з заповненим `.env` (або `printf "%s\n" "$OPENAI_API_KEY" | openclaw models auth paste-api-key --provider openai --agent lead`, те саме для `dev` і `qa`).
+- `No route-compatible authentication source`: ключ моделі не в auth-профілі агента. Повтори `./scripts/setup.sh` з заповненим `.env` (або `printf "%s\n" "$OPENAI_API_KEY" | openclaw models auth paste-api-key --provider openai --agent lead`, те саме для `ba`, `architect`, `dev` і `qa`).
 - `agents/main/agent` замість `agents/lead/agent` у виводі: у цій вкладці не завантажено `.env` і `OPENCLAW_CONFIG_PATH`.
 - `Gateway not reachable`: шлюз зупинено; запусти `openclaw gateway --verbose` або використай `openclaw agent --local ...`.
 - Агент пише, що скіли недоступні в пісочниці: запусти `./scripts/sync-skills.sh` (після кожного `git pull`, що змінює `skills/`) і перезапусти шлюз.
@@ -76,7 +86,7 @@ dev і qa мають частину скілів з [dotnet/skills](https://gith
 3. Lead підхопить його на heartbeat (кожні 30 хв, 08:00–23:00) або за командою в Telegram.
 
 ## Мітки (машина станів)
-`ai-ready` → `ai-in-progress` (dev → qa → review lead) → `ai-review` → approve і merge людиною. Побічні: `ai-needs-input`, `ai-blocked`.
+`ai-ready` → `ai-in-progress` (ba → architect → dev → qa → review lead) → `ai-review` → approve і merge людиною. Побічні: `ai-needs-input`, `ai-blocked`.
 
 ## Безпека
 - Агенти працюють у Docker-пісочниці без доступу до хоста, `~/.ssh` і твоїх git-облікових даних. У них є лише власний PAT.

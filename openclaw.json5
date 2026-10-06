@@ -1,4 +1,4 @@
-// Конфіг команди Spec → PR. Етап 2: lead + dev + qa; code review робить lead.
+// Конфіг команди Spec → PR. Етап 3: lead → ba → architect → dev → qa; code review робить lead.
 // Запуск: export OPENCLAW_CONFIG_PATH="$AGENT_TEAM_DIR/openclaw.json5" (див. README).
 // Звірено з документацією OpenClaw 2026.9.8.
 {
@@ -33,11 +33,41 @@
         workspace: "${AGENT_TEAM_DIR}/workspaces/lead",
         model: "${LEAD_MODEL}",
         skills: ["github-issue", "handoff", "pr-review"],
-        subagents: { allowAgents: ["dev", "qa"], delegationMode: "prefer" },
+        subagents: { allowAgents: ["ba", "architect", "dev", "qa"], delegationMode: "prefer" },
         heartbeat: { every: "30m", isolatedSession: true, activeHours: { start: "08:00", end: "23:00" } },
         // Review пише коментарі через gh api, тож write/edit йому не потрібні.
         sandbox: { docker: { env: { GH_TOKEN: "${GH_TOKEN_LEAD}" } } },
         tools: { deny: ["write", "edit", "apply_patch", "browser"] },
+      },
+      // Перевіряє спеку до будь-якої роботи: PASS або QUESTIONS. Лише читає, тож write/edit не має.
+      ba: {
+        name: "BA",
+        workspace: "${AGENT_TEAM_DIR}/workspaces/ba",
+        model: "${BA_MODEL}",
+        skills: ["github-issue", "handoff", "spec-validate"],
+        subagents: { allowAgents: [] },
+        sandbox: { docker: { env: { GH_TOKEN: "${GH_TOKEN_BA}" } } },
+        tools: { deny: ["write", "edit", "apply_patch", "browser"] },
+      },
+      // Створює гілку ai/<issue>-<slug> з plan.md і tasks.md (і чернеткою ADR, якщо треба); код не пише.
+      architect: {
+        name: "Architect",
+        workspace: "${AGENT_TEAM_DIR}/workspaces/architect",
+        model: "${ARCHITECT_MODEL}",
+        skills: ["github-issue", "handoff", "repo-conventions", "spec-to-plan", "adr-writer", "git-commit"],
+        subagents: { allowAgents: [] },
+        sandbox: {
+          docker: {
+            env: {
+              GH_TOKEN: "${GH_TOKEN_ARCHITECT}",
+              GIT_AUTHOR_NAME: "dopamine-dev-bot",
+              GIT_AUTHOR_EMAIL: "roma.sharabura+bot@gmail.com",
+              GIT_COMMITTER_NAME: "dopamine-dev-bot",
+              GIT_COMMITTER_EMAIL: "roma.sharabura+bot@gmail.com",
+            },
+          },
+        },
+        tools: { deny: ["browser"] },
       },
       dev: {
         name: "Dev",
@@ -96,7 +126,7 @@
   // Скіли лежать у workspaces/<agent>/skills (копії з skills/, scripts/sync-skills.sh):
   // тільки скіли воркспейсу доступні агенту в пісочниці як /workspace/skills.
   tools: {
-    agentToAgent: { allow: ["lead", "dev", "qa"] },
+    agentToAgent: { allow: ["lead", "ba", "architect", "dev", "qa"] },
   },
   commands: {
     ownerAllowFrom: ["telegram:${TELEGRAM_OWNER_ID}"],

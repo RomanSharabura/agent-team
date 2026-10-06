@@ -8,6 +8,8 @@ cd "$(dirname "$0")/.."
 
 declare -A AGENT_SKILLS=(
   [lead]="github-issue handoff pr-review"
+  [ba]="github-issue handoff spec-validate"
+  [architect]="github-issue handoff repo-conventions spec-to-plan adr-writer git-commit"
   [dev]="github-issue handoff repo-conventions minimal-api-feature dotnet-quality-gate git-commit"
   [qa]="github-issue handoff repo-conventions spec-to-tests dotnet-quality-gate git-commit"
 )
@@ -16,6 +18,8 @@ declare -A AGENT_SKILLS=(
 # docs/conventions.md dopamine-shop мають пріоритет, див. workspaces/<agent>/AGENTS.md.
 declare -A DOTNET_SKILLS=(
   [lead]=""
+  [ba]=""
+  [architect]=""
   [dev]="dotnet-webapi optimizing-ef-core-queries csharp-refactoring run-tests platform-detection filter-syntax"
   [qa]="run-tests platform-detection filter-syntax test-anti-patterns assertion-quality test-analysis-extensions test-gap-analysis"
 )
