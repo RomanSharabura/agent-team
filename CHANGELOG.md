@@ -16,6 +16,9 @@
 - CHANGELOG і CI-перевірки: запис у CHANGELOG і опис у кожному коміті PR. (#1)
 - dev додає рядок у CHANGELOG dopamine-shop і пише коміти з тілом. (#1)
 
+### Fixed
+- Автор комітів dev і qa задано змінними `GIT_AUTHOR_*` і `GIT_COMMITTER_*` у пісочниці: qa на SPEC-002 не зміг закомітити `qa-report.md` без `git config`.
+
 ### Changed
 - dev підписує коміти поштою GitHub-акаунта `dopamine-dev-bot`, щоб PR і коміти агентів ішли від бота, а Roman міг їх апрувити.
 - dopamine-shop переїхав в організацію `Roman-Sharabura`: оновлено скіли, інструкції агентів, `labels.sh`, README і `.env.example`. (#3)
