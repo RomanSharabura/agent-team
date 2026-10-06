@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-// Сторож бюджету команди. Запускає його автоматизація OpenClaw раз на 10 хвилин (scripts/automations.sh),
-// вручну: node scripts/budget-guard.mjs --report
+// Team budget guard. Run by an OpenClaw automation every 10 minutes (scripts/automations.sh),
+// manually: node scripts/budget-guard.mjs --report
 //
-// 1. Бере витрати кожного агента з `openclaw gateway usage-cost` (журнали сесій OpenClaw).
-// 2. Пише знімок у workspaces/lead/state/budget.json: lead читає його перед кожною передачею і в ранковому брифінгу.
-// 3. Перевищено ліміт з budget.json → `openclaw system heartbeat disable` (команда не бере нових задач
-//    і не відновлює зупинені) і одне повідомлення в Slack. Нова доба і ліміти в нормі → heartbeat назад,
-//    але лише якщо його вимкнув сам сторож.
-// Без змін друкує NO_REPLY: автоматизація тоді нічого не надсилає.
+// 1. Gets each agent's spend from `openclaw gateway usage-cost` (OpenClaw session logs).
+// 2. Writes a snapshot to workspaces/lead/state/budget.json: lead reads it before every handoff and in the morning briefing.
+// 3. A budget.json limit is exceeded → `openclaw system heartbeat disable` (the team takes no new tasks
+//    and does not resume stopped ones) and a single Slack message. New day and limits OK → heartbeat back on,
+//    but only if the guard itself disabled it.
+// With no changes it prints NO_REPLY: the automation then sends nothing.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -23,7 +23,7 @@ const now = new Date();
 const today = now.toISOString().slice(0, 10);
 const yesterday = new Date(now.getTime() - 86400000).toISOString().slice(0, 10);
 const month = today.slice(0, 7);
-// Від початку місяця, але не менше двох днів, щоб у брифінгу 1-го числа було «вчора».
+// From the start of the month, but at least two days, so the briefing on the 1st has "yesterday".
 const days = Math.max(now.getUTCDate(), 2);
 
 const zero = () => ({ usd: 0, tokens: 0, cacheRead: 0, missingCost: 0 });
@@ -57,7 +57,7 @@ for (const period of ["today", "yesterday", "month"]) {
   team[period] = Object.values(agents).map((a) => a[period]).reduce(add, zero());
 }
 
-// Ліміти: daily рахуємо за сьогодні, monthly — від початку місяця.
+// Limits: daily is counted for today, monthly from the start of the month.
 const checks = [];
 const collect = (scope, limits, used) => {
   for (const [period, key] of [["daily", "today"], ["monthly", "month"]]) {
@@ -85,32 +85,32 @@ if (guard.alerted.date !== today) guard.alerted = { date: today, keys: [] };
 const messages = [];
 if (!report) {
   if (over.length) {
-    // Повторюємо щоразу: сторож не знає, чи пережив вимик heartbeat перезапуск шлюзу.
+    // Repeat every time: the guard does not know whether the heartbeat disable survived a gateway restart.
     heartbeat("disable");
     if (!guard.pausedByGuard) {
       guard.pausedByGuard = true;
       guard.pausedOn = today;
       messages.push(
-        `⛔ Бюджет вичерпано, heartbeat lead вимкнено: нових задач і відновлення не буде.\n` +
+        `⛔ Budget exhausted, lead heartbeat disabled: no new tasks and no resumes.\n` +
           over.map(describe).join("\n") +
-          `\nПоточний крок агента дограє до кінця, далі lead зупиниться з \`ai-blocked\`.` +
-          `\nПродовжити сьогодні: підніми ліміт у budget.json, і сторож сам увімкне heartbeat протягом 10 хвилин. Інакше команда продовжить завтра (доба за UTC).`,
+          `\nThe agent's current step will run to completion, then lead will stop with \`ai-blocked\`.` +
+          `\nTo continue today: raise the limit in budget.json and the guard will re-enable the heartbeat within 10 minutes. Otherwise the team continues tomorrow (day in UTC).`,
       );
     }
   } else if (guard.pausedByGuard) {
     heartbeat("enable");
     guard.pausedByGuard = false;
     guard.pausedOn = null;
-    messages.push("✅ Бюджет у нормі, heartbeat lead знову увімкнено: команда продовжить зупинені issues і візьме нові з черги.");
+    messages.push("✅ Budget OK, lead heartbeat re-enabled: the team will resume stopped issues and take new ones from the queue.");
   }
   const fresh = checks.filter((c) => c.level === "warn" && !guard.alerted.keys.includes(key(c)));
-  if (fresh.length) messages.push(`⚠️ Витрачено понад ${Math.round(budget.warnAt * 100)}% бюджету:\n` + fresh.map(describe).join("\n"));
+  if (fresh.length) messages.push(`⚠️ Over ${Math.round(budget.warnAt * 100)}% of budget spent:\n` + fresh.map(describe).join("\n"));
   for (const c of checks) if (!guard.alerted.keys.includes(key(c))) guard.alerted.keys.push(key(c));
   if (team.today.missingCost && !guard.alerted.keys.includes("missing-cost")) {
     guard.alerted.keys.push("missing-cost");
     messages.push(
-      "ℹ️ OpenClaw не знає ціни моделі для частини викликів: долари в обліку занижені, бюджет тримає ліміт tokens. " +
-        "Ціни можна додати в models.providers.<provider>.models.<model>.cost.",
+      "ℹ️ OpenClaw does not know model prices for some calls: tracked dollars are understated, the tokens limit holds the budget. " +
+        "Prices can be added in models.providers.<provider>.models.<model>.cost.",
     );
   }
 }
@@ -135,13 +135,13 @@ if (!report) {
 
 if (report) {
   const row = (name, a) =>
-    `${name.padEnd(10)} сьогодні $${a.today.usd.toFixed(2).padStart(6)} ${mtok(a.today.tokens).padStart(7)}` +
-    ` | вчора $${a.yesterday.usd.toFixed(2).padStart(6)} | місяць $${a.month.usd.toFixed(2).padStart(7)}`;
-  console.log(`Витрати на ${today} (UTC), статус: ${status}${guard.pausedByGuard ? ", heartbeat вимкнено сторожем" : ""}`);
+    `${name.padEnd(10)} today $${a.today.usd.toFixed(2).padStart(6)} ${mtok(a.today.tokens).padStart(7)}` +
+    ` | yesterday $${a.yesterday.usd.toFixed(2).padStart(6)} | month $${a.month.usd.toFixed(2).padStart(7)}`;
+  console.log(`Spend for ${today} (UTC), status: ${status}${guard.pausedByGuard ? ", heartbeat disabled by guard" : ""}`);
   for (const [id, a] of Object.entries(agents)) console.log(row(id, a));
   console.log(row("team", team));
   for (const c of checks) console.log(describe(c));
-  if (team.month.missingCost) console.log(`Без ціни: ${team.month.missingCost} викликів моделі, долари занижені; страхує ліміт tokens.`);
+  if (team.month.missingCost) console.log(`No price: ${team.month.missingCost} model calls, dollars understated; the tokens limit is the fallback.`);
 } else {
   console.log(messages.length ? messages.join("\n\n") : "NO_REPLY");
 }
@@ -153,10 +153,10 @@ function key(c) {
   return `${c.level}:${c.scope}:${c.period}:${c.metric}`;
 }
 function describe(c) {
-  const who = c.scope === "team" ? "команда" : c.scope;
-  const period = c.period === "daily" ? "за добу" : "за місяць";
+  const who = c.scope === "team" ? "team" : c.scope;
+  const period = c.period === "daily" ? "daily" : "monthly";
   const fmt = c.metric === "usd" ? (v) => `$${v.toFixed(2)}` : mtok;
-  return `• ${who} ${period}: ${fmt(c.used)} з ${fmt(c.limit)} (${Math.round(c.ratio * 100)}%)`;
+  return `• ${who} ${period}: ${fmt(c.used)} of ${fmt(c.limit)} (${Math.round(c.ratio * 100)}%)`;
 }
 function mtok(v) {
   return `${(v / 1e6).toFixed(1)}M tok`;

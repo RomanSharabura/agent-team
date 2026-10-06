@@ -5,7 +5,7 @@ metadata: { "openclaw": { "requires": { "bins": ["dotnet"] } } }
 ---
 # .NET quality gate
 
-З кореня репозиторію, по черзі, кожна команда має завершитись з кодом 0:
+From the repository root, in order, every command must exit with code 0:
 
 ```bash
 dotnet restore
@@ -14,12 +14,12 @@ dotnet format --verify-no-changes --no-restore || { dotnet format --no-restore; 
 dotnet test --no-build
 ```
 
-- Warnings — це помилки (`TreatWarningsAsErrors`). Виправляй причину; `#pragma warning disable` лише з коментарем-причиною і згадкою в PR.
-- Інтеграційні тести працюють на справжньому PostgreSQL. У пісочниці сервер задано змінною `TEST_POSTGRES_CONNECTION`; якщо вона порожня і Docker недоступний, інтеграційні тести впадуть — це проблема оточення: поверни `BLOCKED` з текстом помилки, не вимикай тести.
-- Архітектурні тести (`tests/DopamineShop.ArchitectureTests`) входять у `dotnet test`. Червоний архітектурний тест означає, що код порушує правило з `docs/conventions.md`: змінюй код.
-- Тести не пропускаються (`Skip`), не видаляються і не послаблюються, щоб стати зеленими.
-- Вивід команд скорочуй: показуй лише рядки з `error`, `Failed` і підсумок.
+- Warnings are errors (`TreatWarningsAsErrors`). Fix the cause; `#pragma warning disable` only with a comment giving the reason and a mention in the PR.
+- Integration tests run on a real PostgreSQL. In the sandbox the server is set by the `TEST_POSTGRES_CONNECTION` variable; if it is empty and Docker is unavailable, the integration tests will fail — this is an environment problem: return `BLOCKED` with the error text, do not disable the tests.
+- Architecture tests (`tests/DopamineShop.ArchitectureTests`) are part of `dotnet test`. A red architecture test means the code breaks a rule from `docs/conventions.md`: change the code.
+- Tests are not skipped (`Skip`), deleted or weakened to turn green.
+- Trim command output: show only lines with `error`, `Failed` and the summary.
 
-Для qa: `build` і `format` мають бути зелені перед push, а червоні тести, що показують знахідки, пушаться разом з `verdict: FAIL`.
+For qa: `build` and `format` must be green before push, and red tests that show findings are pushed together with `verdict: FAIL`.
 
-Результат у конверт: `gate: green` або `gate: red` з першими 20 рядками помилок.
+Result in the envelope: `gate: green` or `gate: red` with the first 20 error lines.

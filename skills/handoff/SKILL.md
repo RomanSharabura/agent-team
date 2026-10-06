@@ -4,7 +4,7 @@ description: Envelope format for passing work between team agents (lead to ba, a
 ---
 # Handoff envelope
 
-Агенти передають між собою лише конверт. Увесь стан живе в GitHub (issue, гілка, PR) і в папці спеки.
+Agents pass only the envelope between each other. All state lives in GitHub (issue, branch, PR) and in the spec folder.
 
 ```json
 {
@@ -21,27 +21,27 @@ description: Envelope format for passing work between team agents (lead to ba, a
 }
 ```
 
-- `branch`: `ai/<issue>-<slug>`, де `slug` — частина назви папки спеки після номера.
-- `step`: `validate` (ba), `plan` (architect), `implement` (dev) або `test` (qa). Review робить сам lead (скіл `pr-review`), без передачі; його вердикт lead записує в конверт так само.
-- Порядок: ba → architect → dev → qa → review lead. Гілку створює architect і пушить у неї `plan.md` і `tasks.md`; dev працює в тій самій гілці.
-- `pr`: номер draft PR. Заповнює dev у відповіді, далі lead передає його qa.
-- `verdict`: `TODO` у запиті. У відповіді:
-  - ba: `PASS`, `QUESTIONS` або `BLOCKED`;
-  - architect: `READY`, `QUESTIONS` або `BLOCKED`;
-  - dev: `READY` (з полем `pr`) або `BLOCKED`;
-  - qa: `PASS`, `FAIL` або `BLOCKED`;
-  - review (lead): `APPROVE` або `CHANGES`.
-- `notes`: для `QUESTIONS` — «REQ-ID — проблема — питання» (lead публікує їх в issue для Roman); для `PASS` від ba — необов'язкові `nit: …`; для `READY` від architect — по рядку на чернетку ADR; для `FAIL` і `BLOCKED` — рядки «REQ-ID — очікувано — фактично — тест» або «REQ-ID — проблема — що потрібно»; для `CHANGES` — «path:line — проблема — що зробити» (лише 🔴 з review). Lead передає їх dev без змін.
-- `attempt` стосується лише петлі dev ↔ qa/review: ba і architect працюють з `attempt: 1`. Збільшує його лише lead, коли повертає задачу dev після `FAIL` від qa або `CHANGES` з review. Лічильник спільний, спроб не більше трьох (dev може отримати задачу назад двічі): `FAIL` чи `CHANGES` на `attempt: 3` → `ai-blocked`.
+- `branch`: `ai/<issue>-<slug>`, where `slug` is the part of the spec folder name after the number.
+- `step`: `validate` (ba), `plan` (architect), `implement` (dev) or `test` (qa). The review is done by lead itself (skill `pr-review`), without a handoff; lead records its verdict in the envelope the same way.
+- Order: ba → architect → dev → qa → lead review. architect creates the branch and pushes `plan.md` and `tasks.md` to it; dev works in the same branch.
+- `pr`: draft PR number. dev fills it in the response, then lead passes it to qa.
+- `verdict`: `TODO` in the request. In the response:
+  - ba: `PASS`, `QUESTIONS` or `BLOCKED`;
+  - architect: `READY`, `QUESTIONS` or `BLOCKED`;
+  - dev: `READY` (with the `pr` field) or `BLOCKED`;
+  - qa: `PASS`, `FAIL` or `BLOCKED`;
+  - review (lead): `APPROVE` or `CHANGES`.
+- `notes`: for `QUESTIONS` — "REQ-ID — problem — question" (lead posts them in the issue for Roman); for `PASS` from ba — optional `nit: …`; for `READY` from architect — one line per draft ADR; for `FAIL` and `BLOCKED` — lines "REQ-ID — expected — actual — test" or "REQ-ID — problem — what is needed"; for `CHANGES` — "path:line — problem — what to do" (only 🔴 from the review). Lead passes them to dev unchanged.
+- `attempt` applies only to the dev ↔ qa/review loop: ba and architect work with `attempt: 1`. Only lead increments it, when returning the task to dev after `FAIL` from qa or `CHANGES` from the review. The counter is shared, no more than three attempts (dev can get the task back twice): `FAIL` or `CHANGES` on `attempt: 3` → `ai-blocked`.
 
-Lead передає конверт через `sessions_spawn` з `agentId` (`ba`, `architect`, `dev` або `qa`) і конвертом як текстом завдання. Агент відповідає конвертом останнім повідомленням.
+Lead passes the envelope via `sessions_spawn` with `agentId` (`ba`, `architect`, `dev` or `qa`) and the envelope as the task text. The agent replies with an envelope as its last message.
 
-## Бюджет
-Перед кожним `sessions_spawn` lead читає знімок сторожа бюджету:
+## Budget
+Before every `sessions_spawn` lead reads the budget guard snapshot:
 ```bash
 jq '{updatedAt, paused, over: [.checks[] | select(.level == "over") | .scope]}' /workspace/state/budget.json
 ```
-- `paused: true`, або в `over` є `team` чи агент, якому передаєш, → не передавай. Мітка `ai-blocked` і коментар-блокер з конвертом, як коли недоступний `sessions_spawn`, з причиною «бюджет: <що перевищено>». Людині не пиши: сторож уже повідомив Roman.
-- Файлу немає → передавай (сторож ще не запускався), але в наступному повідомленні людині згадай, що облік витрат не працює.
+- `paused: true`, or `over` contains `team` or the agent you are handing off to → do not hand off. Label `ai-blocked` and a blocker comment with the envelope, as when `sessions_spawn` is unavailable, with the reason "budget: <what was exceeded>". Do not write to the human: the guard has already notified Roman.
+- No file → hand off (the guard has not run yet), but mention in the next message to the human that spend tracking is not working.
 
-Одразу після `sessions_spawn` lead викликає `sessions_yield` і так чекає конверт. Не завершуй хід без yield: тоді результат прийде окремим ходом, у якому OpenClaw може не дати `sessions_spawn`, і наступну передачу зробити не вийде. Після yield хід продовжується з тими самими інструментами, що були на момент spawn. Не опитуй `subagents` чи `sessions_list` у циклі.
+Immediately after `sessions_spawn` lead calls `sessions_yield` and waits for the envelope that way. Do not end the turn without a yield: the result would then arrive as a separate turn in which OpenClaw may not provide `sessions_spawn`, and the next handoff would be impossible. After the yield the turn continues with the same tools that were available at spawn time. Do not poll `subagents` or `sessions_list` in a loop.

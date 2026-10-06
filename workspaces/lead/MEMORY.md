@@ -1,3 +1,3 @@
 # MEMORY.md — Lead
 
-Уроки, які варто пам'ятати між задачами. Пиши коротко: дата, що сталося, що робити інакше.
+Lessons worth remembering between tasks. Keep it short: date, what happened, what to do differently.

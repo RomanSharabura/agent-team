@@ -1,12 +1,12 @@
-# <тип>(<модуль>): <що зроблено, наказовий спосіб>    ≤ 72 символи
-# Типи: feat, fix, refactor, test, docs, build, ci, chore
-# Для агента чи скіла — його назва як модуль:
-#   feat(dev): клонувати репо в /workspace/repos
+# <type>(<scope>): <what was done, imperative mood>    ≤ 72 characters
+# Types: feat, fix, refactor, test, docs, build, ci, chore
+# For an agent or skill, use its name as the scope:
+#   feat(dev): clone repo into /workspace/repos
 #
-# Тіло — обов'язкове. По пункту на кожну зміну: що змінилось і навіщо.
+# Body is required, in English. One bullet per change: what changed and why.
 # - ...
 # - ...
 #
 # Refs: SPEC-NNN, #<issue>
 #
-# Увімкнути шаблон: git config commit.template .gitmessage
+# Enable the template: git config commit.template .gitmessage
