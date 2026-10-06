@@ -16,6 +16,10 @@ for var in AGENT_TEAM_DIR LEAD_MODEL BA_MODEL ARCHITECT_MODEL DEV_MODEL QA_MODEL
   [[ -n "${!var:-}" ]] || { echo "У .env порожня змінна $var (див. .env.example)"; exit 1; }
 done
 
+for var in LEAD_FALLBACK_MODEL BA_FALLBACK_MODEL ARCHITECT_FALLBACK_MODEL DEV_FALLBACK_MODEL QA_FALLBACK_MODEL; do
+  [[ -n "${!var:-}" ]] || echo "Увага: порожня $var — на rate limit хід агента обірветься без запасної моделі"
+done
+
 echo "== Будую пісочницю"
 docker build -t agent-team/dotnet-sandbox:10 sandbox/
 
