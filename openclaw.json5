@@ -1,4 +1,4 @@
-// Конфіг команди Spec → PR. Етап 2: lead + dev + qa.
+// Конфіг команди Spec → PR. Етап 2: lead + dev + qa; code review робить lead.
 // Запуск: export OPENCLAW_CONFIG_PATH="$AGENT_TEAM_DIR/openclaw.json5" (див. README).
 // Звірено з документацією OpenClaw 2026.9.8.
 {
@@ -32,9 +32,10 @@
         name: "Lead",
         workspace: "${AGENT_TEAM_DIR}/workspaces/lead",
         model: "${LEAD_MODEL}",
-        skills: ["github-issue", "handoff"],
+        skills: ["github-issue", "handoff", "pr-review"],
         subagents: { allowAgents: ["dev", "qa"], delegationMode: "prefer" },
         heartbeat: { every: "30m", isolatedSession: true, activeHours: { start: "08:00", end: "23:00" } },
+        // Review пише коментарі через gh api, тож write/edit йому не потрібні.
         sandbox: { docker: { env: { GH_TOKEN: "${GH_TOKEN_LEAD}" } } },
         tools: { deny: ["write", "edit", "apply_patch", "browser"] },
       },
