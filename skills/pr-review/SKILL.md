@@ -50,7 +50,7 @@ gh api "repos/$R/pulls/<PR>/reviews" --method POST --input - <<'JSON'
 {
   "commit_id": "<headRefOid>",
   "event": "COMMENT",
-  "body": "Review (спроба N з 3): 1 blocking, 2 nit\n\n- 🔴 ...\n- 🟡 ...",
+  "body": "**[lead]** Review (спроба N з 3): 1 blocking, 2 nit\n\n- 🔴 ...\n- 🟡 ...",
   "comments": [
     { "path": "src/Modules/Users/...cs", "line": 42, "side": "RIGHT", "body": "🔴 blocking: ... Що зробити: ..." }
   ]
@@ -59,7 +59,7 @@ JSON
 ```
 Помилка 422 (`line must be part of the diff`) → прибери цей коментар з `comments`, перенеси його в `body` і повтори.
 
-Тіло review: перший рядок `Review (спроба N з 3): <k> blocking, <m> nit`, далі список знахідок, до 15 рядків. Без знахідок: `Review (спроба N з 3): зауважень немає` і 1–3 рядки, що перевірено.
+Тіло review: перший рядок `**[lead]** Review (спроба N з 3): <k> blocking, <m> nit`, далі список знахідок, до 15 рядків. Без знахідок: `**[lead]** Review (спроба N з 3): зауважень немає` і 1–3 рядки, що перевірено.
 
 ## 5. Повторний review (`attempt` > 1)
 Дивись лише нові коміти після свого попереднього review (`gh api repos/$R/pulls/<PR>/reviews` → `commit_id` останнього твого, далі `gh api repos/$R/compare/<commit_id>...<headRefOid>`).

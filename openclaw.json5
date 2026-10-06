@@ -25,6 +25,9 @@
           // плюс спільний Postgres для інтеграційних тестів. Docker-сокет у пісочницю не монтуємо.
           network: "agent-team",
         },
+        // Усі агенти ходять у GitHub одним ботом dopamine-dev-bot, тож хто що зробив, видно лише з підпису:
+        // AGENT_ID → префікс **[<agent>]** у коментарях і трейлер Agent: у комітах (скіли github-issue, git-commit),
+        // а в автора комітів ім'я агента в дужках. Пошта та сама, щоб коміти прив'язувались до бота.
       },
       heartbeat: { every: "0m" },
     },
@@ -37,7 +40,7 @@
         subagents: { allowAgents: ["ba", "architect", "dev", "qa"], delegationMode: "prefer" },
         heartbeat: { every: "30m", isolatedSession: true, activeHours: { start: "08:00", end: "23:00" } },
         // Review пише коментарі через gh api, тож write/edit йому не потрібні.
-        sandbox: { docker: { env: { GH_TOKEN: "${GH_TOKEN_LEAD}" } } },
+        sandbox: { docker: { env: { GH_TOKEN: "${GH_TOKEN_LEAD}", AGENT_ID: "lead" } } },
         // Передачі між агентами: spawn і yield потрібні lead явно, незалежно від профілю інструментів.
         tools: { alsoAllow: ["sessions_spawn", "sessions_yield", "subagents"], deny: ["write", "edit", "apply_patch", "browser"] },
       },
@@ -48,7 +51,7 @@
         model: "${BA_MODEL}",
         skills: ["github-issue", "handoff", "spec-validate"],
         subagents: { allowAgents: [] },
-        sandbox: { docker: { env: { GH_TOKEN: "${GH_TOKEN_BA}" } } },
+        sandbox: { docker: { env: { GH_TOKEN: "${GH_TOKEN_BA}", AGENT_ID: "ba" } } },
         tools: { deny: ["write", "edit", "apply_patch", "browser"] },
       },
       // Створює гілку ai/<issue>-<slug> з plan.md і tasks.md (і чернеткою ADR, якщо треба); код не пише.
@@ -62,7 +65,8 @@
           docker: {
             env: {
               GH_TOKEN: "${GH_TOKEN_ARCHITECT}",
-              GIT_AUTHOR_NAME: "dopamine-dev-bot",
+              AGENT_ID: "architect",
+              GIT_AUTHOR_NAME: "dopamine-dev-bot (architect)",
               GIT_AUTHOR_EMAIL: "roma.sharabura+bot@gmail.com",
               GIT_COMMITTER_NAME: "dopamine-dev-bot",
               GIT_COMMITTER_EMAIL: "roma.sharabura+bot@gmail.com",
@@ -87,10 +91,11 @@
           docker: {
             env: {
               GH_TOKEN: "${GH_TOKEN_DEV}",
+              AGENT_ID: "dev",
               // Інтеграційні тести dopamine-shop беруть цей сервер замість Testcontainers.
               TEST_POSTGRES_CONNECTION: "Host=agent-team-postgres;Username=postgres;Password=${AGENT_PG_PASSWORD};Database=postgres",
               // Автор комітів задано тут, а не лише в TOOLS.md: без нього git commit падає, якщо агент забув git config.
-              GIT_AUTHOR_NAME: "dopamine-dev-bot",
+              GIT_AUTHOR_NAME: "dopamine-dev-bot (dev)",
               GIT_AUTHOR_EMAIL: "roma.sharabura+bot@gmail.com",
               GIT_COMMITTER_NAME: "dopamine-dev-bot",
               GIT_COMMITTER_EMAIL: "roma.sharabura+bot@gmail.com",
@@ -116,9 +121,10 @@
           docker: {
             env: {
               GH_TOKEN: "${GH_TOKEN_QA}",
+              AGENT_ID: "qa",
               TEST_POSTGRES_CONNECTION: "Host=agent-team-postgres;Username=postgres;Password=${AGENT_PG_PASSWORD};Database=postgres",
               // Автор комітів задано тут, а не лише в TOOLS.md: без нього git commit падає, якщо агент забув git config.
-              GIT_AUTHOR_NAME: "dopamine-dev-bot",
+              GIT_AUTHOR_NAME: "dopamine-dev-bot (qa)",
               GIT_AUTHOR_EMAIL: "roma.sharabura+bot@gmail.com",
               GIT_COMMITTER_NAME: "dopamine-dev-bot",
               GIT_COMMITTER_EMAIL: "roma.sharabura+bot@gmail.com",
