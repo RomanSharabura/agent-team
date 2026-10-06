@@ -21,6 +21,7 @@
 - Скіли .NET від Microsoft з [dotnet/skills](https://github.com/dotnet/skills) у `vendor/dotnet-skills/`: dev отримує `dotnet-webapi`, `optimizing-ef-core-queries`, `csharp-refactoring`, `run-tests`; qa — `run-tests`, `test-anti-patterns`, `assertion-quality`, `test-gap-analysis`. Правила dopamine-shop мають пріоритет. Оновлення — `scripts/update-dotnet-skills.sh`.
 
 ### Fixed
+- Потік більше не стоїть, коли lead втрачає `sessions_spawn` у ході з відповіддю агента: lead записує незроблену передачу конвертом у коментарі-блокері, а heartbeat раз на 10 хвилин відновлює потік зі стану GitHub (новий скіл `pipeline-resume`). Людина потрібна лише там, де справді треба її рішення.
 - lead втрачав `sessions_spawn` у ході, що приходив після відповіді агента (на SPEC-003 зупинився перед architect і перед dev). Тепер lead після кожного `sessions_spawn` чекає через `sessions_yield`, а `sessions_spawn`, `sessions_yield` і `subagents` дозволено йому явно.
 - lead не міг передати задачу architect: Tool Search ховав `sessions_spawn`, і пошук його не знаходив. `tools.toolSearch: false` — агенти бачать усі свої інструменти напряму.
 - Автор комітів dev і qa задано змінними `GIT_AUTHOR_*` і `GIT_COMMITTER_*` у пісочниці: qa на SPEC-002 не зміг закомітити `qa-report.md` без `git config`.
