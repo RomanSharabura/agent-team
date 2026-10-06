@@ -12,6 +12,7 @@ workspaces/architect/   SOUL, AGENTS, USER, TOOLS, MEMORY
 workspaces/dev/         SOUL, AGENTS, USER, TOOLS, MEMORY
 workspaces/qa/          SOUL, AGENTS, USER, TOOLS, MEMORY
 skills/                 shared skills; scripts/sync-skills.sh copies them into workspaces/<agent>/skills
+templates/memory/       starting MEMORY.md per agent; sync-skills.sh copies it if missing (MEMORY.md itself is not in git)
 vendor/dotnet-skills/   .NET skills from Microsoft (github.com/dotnet/skills), sync-skills.sh copies them too
 CHANGELOG.md            change history; every PR adds a line (checked by CI)
 sandbox/Dockerfile      .NET 10 SDK + git + gh + psql for the sandbox

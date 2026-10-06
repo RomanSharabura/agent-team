@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Copies shared skills from skills/ and the .NET skills from Microsoft from vendor/dotnet-skills/
-# into workspaces/<agent>/skills/.
+# into workspaces/<agent>/skills/, and creates workspaces/<agent>/MEMORY.md from templates/memory/ if missing.
 # The sandbox only sees the agent's workspace (/workspace/skills), not skills/ at the repo root.
 # Run after every git pull that changes skills/ (setup.sh does this itself).
 set -euo pipefail
@@ -35,4 +35,6 @@ for agent in "${!AGENT_SKILLS[@]}"; do
     cp -r "vendor/dotnet-skills/$skill" "$dest/$skill"
   done
   echo "$agent: ${AGENT_SKILLS[$agent]} ${DOTNET_SKILLS[$agent]}"
+  # MEMORY.md belongs to the agent once created: copy the template only if it is missing.
+  [[ -f "workspaces/$agent/MEMORY.md" ]] || cp "templates/memory/$agent.md" "workspaces/$agent/MEMORY.md"
 done

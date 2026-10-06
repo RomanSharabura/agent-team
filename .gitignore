@@ -5,3 +5,5 @@ workspaces/*/repos/
 workspaces/*/skills/
 # budget guard snapshot (scripts/budget-guard.mjs)
 workspaces/*/state/
+# agents write their lessons here at runtime; starting copies in templates/memory/
+workspaces/*/MEMORY.md
