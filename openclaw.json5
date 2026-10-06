@@ -4,7 +4,9 @@
 // Звірено з документацією OpenClaw 2026.9.8.
 {
   // Без gateway.mode шлюз відмовляється стартувати (openclaw gateway).
-  gateway: { mode: "local", bind: "loopback" },
+  // Токен шлюзу з .env (setup.sh генерує): без нього Control UI (openclaw dashboard) просить токен,
+  // якого ніде немає, а openclaw logs пише «requires credentials». CLI бере ту саму змінну сам.
+  gateway: { mode: "local", bind: "loopback", auth: { mode: "token", token: "${OPENCLAW_GATEWAY_TOKEN}" } },
   // Ключі API зберігаються не тут, а в auth-профілях кожного агента (scripts/setup.sh).
   // OpenAI за API-ключем іде через вбудований рантайм OpenClaw, а не через Codex.
   models: {

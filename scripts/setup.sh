@@ -6,6 +6,17 @@ cd "$(dirname "$0")/.."
 [[ -f .env ]] || { echo "Створи .env з .env.example"; exit 1; }
 set -a; source .env; set +a
 
+if [[ -z "${OPENCLAW_GATEWAY_TOKEN:-}" ]]; then
+  OPENCLAW_GATEWAY_TOKEN="$(node -e 'console.log(require("crypto").randomBytes(24).toString("hex"))')"
+  if grep -q '^OPENCLAW_GATEWAY_TOKEN=' .env; then
+    sed -i "s/^OPENCLAW_GATEWAY_TOKEN=.*/OPENCLAW_GATEWAY_TOKEN=$OPENCLAW_GATEWAY_TOKEN/" .env
+  else
+    printf '\nOPENCLAW_GATEWAY_TOKEN=%s\n' "$OPENCLAW_GATEWAY_TOKEN" >> .env
+  fi
+  export OPENCLAW_GATEWAY_TOKEN
+  echo "== Згенерував OPENCLAW_GATEWAY_TOKEN у .env"
+fi
+
 node -e 'const [a,b]=process.versions.node.split(".").map(Number); if(!((a===24&&b>=16)||a>=26)){console.error("Потрібен Node >=24.16 (зараз "+process.version+")");process.exit(1)}'
 command -v docker >/dev/null || { echo "Немає docker (Rancher Desktop: увімкни dockerd/moby)"; exit 1; }
 command -v openclaw >/dev/null || npm i -g openclaw@2026.9.8

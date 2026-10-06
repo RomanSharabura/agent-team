@@ -7,6 +7,9 @@
 
 ## [Unreleased]
 
+### Fixed
+- Control UI (`openclaw dashboard`) і `openclaw logs` працюють: шлюз бере токен з `OPENCLAW_GATEWAY_TOKEN`, а `setup.sh` генерує його в `.env`, якщо порожньо.
+
 ### Changed
 - `.env.example`: architect і qa на `gpt-6.1-sol` (запасна `gpt-6-sol`), як dev: ціна та сама, кеш удвічі дешевший.
 - Моделі дешевші й стійкіші до rate limit: у кожного агента запасна модель (`*_FALLBACK_MODEL`), тож 429 від OpenAI більше не обриває хід. Рекомендований набір у `.env.example`: `gpt-6-luna` для lead і ba, `gpt-6-sol` / `gpt-6.1-sol` для architect, dev і qa замість `gpt-6-astra`. Контекст lead обмежено: сесії скидаються щодня о 04:00, а для `gpt-6-luna` діє ліміт 64k активного контексту з автоматичним стисненням.
