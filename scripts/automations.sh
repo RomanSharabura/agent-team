@@ -38,6 +38,11 @@ openclaw automations create "${BRIEFING_CRON:-0 9 * * 1-5}" \
   "${slack[@]}" >/dev/null
 
 openclaw automations list --agent lead
+
+# First snapshot right away, not in 10 minutes: without it lead cannot see the budget.
+echo "== First budget guard run"
+OPENCLAW_BIN="$openclaw_bin" "$node_bin" scripts/budget-guard.mjs
+ls -l workspaces/lead/state/budget.json
 cat <<MSG
 
 Check now:        node scripts/budget-guard.mjs --report
