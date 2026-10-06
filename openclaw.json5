@@ -42,7 +42,11 @@
         name: "Dev",
         workspace: "${AGENT_TEAM_DIR}/workspaces/dev",
         model: "${DEV_MODEL}",
-        skills: ["github-issue", "handoff", "repo-conventions", "minimal-api-feature", "dotnet-quality-gate", "git-commit"],
+        skills: [
+          "github-issue", "handoff", "repo-conventions", "minimal-api-feature", "dotnet-quality-gate", "git-commit",
+          // github.com/dotnet/skills (vendor/dotnet-skills)
+          "dotnet-webapi", "optimizing-ef-core-queries", "csharp-refactoring", "run-tests", "platform-detection", "filter-syntax",
+        ],
         subagents: { allowAgents: [] },
         sandbox: {
           docker: {
@@ -60,7 +64,11 @@
         name: "QA",
         workspace: "${AGENT_TEAM_DIR}/workspaces/qa",
         model: "${QA_MODEL}",
-        skills: ["github-issue", "handoff", "repo-conventions", "spec-to-tests", "dotnet-quality-gate", "git-commit"],
+        skills: [
+          "github-issue", "handoff", "repo-conventions", "spec-to-tests", "dotnet-quality-gate", "git-commit",
+          // github.com/dotnet/skills (vendor/dotnet-skills)
+          "run-tests", "platform-detection", "filter-syntax", "test-anti-patterns", "assertion-quality", "test-analysis-extensions", "test-gap-analysis",
+        ],
         subagents: { allowAgents: [] },
         sandbox: {
           docker: {

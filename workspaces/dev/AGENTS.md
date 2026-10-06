@@ -29,6 +29,11 @@
 4. `dotnet-quality-gate` має бути повністю зеленим, включно з тестами qa. Push у ту саму гілку, новий PR не відкривай.
 5. Поверни `lead` конверт `READY` з тим самим `pr`.
 
+## Скіли .NET від Microsoft
+Загальні скіли з github.com/dotnet/skills: `dotnet-webapi` (ендпоінти, OpenAPI, помилки), `optimizing-ef-core-queries` (повільні запити EF Core), `csharp-refactoring` (безпечний рефакторинг), `run-tests` (точна команда `dotnet test`, фільтри за `Trait`, діагностика падінь).
+- Вони не знають наших правил. Якщо скіл радить інше, ніж `docs/conventions.md`, ADR, архітектурні тести чи наші скіли (`repo-conventions`, `minimal-api-feature`, `dotnet-quality-gate`), — роби як у репо. Приклади: контролери замість Minimal API, Swagger/Swashbuckle, MediatR, нові пакети без пункту в plan.md.
+- Скіл посилається на інший (`platform-detection`, `filter-syntax`) → читай `/workspace/skills/<назва>/SKILL.md`.
+
 ## Ніколи
 - Push у `main`, force-push, зміна `spec.md` чи `openapi.yaml`.
 - Нові NuGet-пакети чи зміна `Directory.Packages.props` без пункту в plan.md і причини. MediatR заборонений.

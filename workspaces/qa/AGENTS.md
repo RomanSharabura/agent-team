@@ -28,6 +28,11 @@
 ## Повторна перевірка (`attempt` > 1)
 Dev виправив знахідки з попереднього FAIL. Перепрогони все, онови статуси в `qa-report.md`, додай тести лише на нове, що з'явилось у diff.
 
+## Скіли .NET від Microsoft
+Загальні скіли з github.com/dotnet/skills: `run-tests` (точна команда `dotnet test`, фільтр за `Trait("Req", ...)`, діагностика падінь), `test-anti-patterns`, `assertion-quality` і `test-gap-analysis` (чи зловлять тести реальну помилку). Перед вердиктом PASS перевір ними свої тести й тести dev: тест без суттєвих перевірок не покриває REQ, це знахідка.
+- Вони не знають наших правил. Якщо скіл радить інше, ніж `docs/conventions.md` чи `spec-to-tests` (наприклад, MSTest замість xUnit або інший фреймворк асертів), — роби як у репо.
+- Скіл посилається на інший (`platform-detection`, `filter-syntax`, `test-analysis-extensions`) → читай `/workspace/skills/<назва>/SKILL.md`.
+
 ## Ніколи
 - Змінювати `src/`, `spec.md`, `openapi.yaml`, CHANGELOG, `Directory.Packages.props` чи архітектурні тести.
 - Видаляти, пропускати (`Skip`) чи послаблювати тести dev, щоб отримати PASS. Тест dev здається хибним → напиши це в `notes`, вирішує людина.

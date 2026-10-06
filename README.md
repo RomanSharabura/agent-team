@@ -10,6 +10,7 @@ workspaces/lead/        SOUL, AGENTS, USER, HEARTBEAT, MEMORY
 workspaces/dev/         SOUL, AGENTS, USER, TOOLS, MEMORY
 workspaces/qa/          SOUL, AGENTS, USER, TOOLS, MEMORY
 skills/                 спільні скіли; scripts/sync-skills.sh копіює їх у workspaces/<agent>/skills
+vendor/dotnet-skills/   скіли .NET від Microsoft (github.com/dotnet/skills), sync-skills.sh теж їх копіює
 CHANGELOG.md            історія змін; кожен PR додає рядок (перевіряє CI)
 sandbox/Dockerfile      .NET 10 SDK + git + gh + psql для пісочниці
 scripts/setup.sh        одноразове налаштування
@@ -57,6 +58,12 @@ openclaw logs --follow                                # що відбуваєт�
 - `agents/main/agent` замість `agents/lead/agent` у виводі: у цій вкладці не завантажено `.env` і `OPENCLAW_CONFIG_PATH`.
 - `Gateway not reachable`: шлюз зупинено; запусти `openclaw gateway --verbose` або використай `openclaw agent --local ...`.
 - Агент пише, що скіли недоступні в пісочниці: запусти `./scripts/sync-skills.sh` (після кожного `git pull`, що змінює `skills/`) і перезапусти шлюз.
+
+## Скіли .NET від Microsoft
+dev і qa мають частину скілів з [dotnet/skills](https://github.com/dotnet/skills) (той самий marketplace `dotnet-agent-skills`, що й у Claude Code). Це звичайні `SKILL.md`, тому OpenClaw читає їх без змін. Ставимо не плагіни цілком, а окремі скіли: плагінні скіли OpenClaw не видно в пісочниці, а зайві скіли (MAUI, Blazor, WinForms) лише з'їдають промпт.
+- Список і коміт: [vendor/dotnet-skills/SOURCE.md](vendor/dotnet-skills/SOURCE.md); хто що отримує: `DOTNET_SKILLS` у `scripts/sync-skills.sh` і `skills` агента в `openclaw.json5`.
+- Оновити: `./scripts/update-dotnet-skills.sh` (або з комітом), переглянь diff, закоміть, `./scripts/sync-skills.sh`, перезапусти шлюз.
+- Додати скіл: допиши `<плагін>/<скіл>` у `scripts/update-dotnet-skills.sh`, назву в `DOTNET_SKILLS` і в `skills` агента.
 
 ## Як дати команді нову задачу
 1. Додай `specs/<NNN-slug>/spec.md` і `openapi.yaml` у `main` dopamine-shop зі `status: ready`.
