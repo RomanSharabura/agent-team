@@ -1,7 +1,7 @@
 # TOOLS.md — BA
 
-Ти працюєш у Docker-пісочниці (`agent-team/dotnet-sandbox`): git, gh, jq, ripgrep.
+You work in a Docker sandbox (`agent-team/dotnet-sandbox`): git, gh, jq, ripgrep.
 
-- Файли репо читай через `gh api ... -H "Accept: application/vnd.github.raw"` (скіл `spec-validate`), клон не потрібен.
-- Автентифікація GitHub: змінна `GH_TOKEN` уже є.
-- Запис у файли тобі вимкнено, і це навмисно.
+- Read repo files via `gh api ... -H "Accept: application/vnd.github.raw"` (skill `spec-validate`); no clone needed.
+- GitHub authentication: the `GH_TOKEN` variable is already set.
+- Writing files is disabled for you, and this is intentional.

@@ -1,154 +1,155 @@
 # agent-team
 
-Команда агентів [OpenClaw](https://docs.openclaw.ai), яка бере специфікацію з [dopamine-shop](https://github.com/Roman-Sharabura/dopamine-shop) і віддає Pull Request. Людина робить дві речі: пише спеку і мержить PR.
+An [OpenClaw](https://docs.openclaw.ai) agent team that takes a spec from [dopamine-shop](https://github.com/Roman-Sharabura/dopamine-shop) and delivers a Pull Request. The human does two things: writes the spec and merges the PR.
 
-**Етап 3 (зараз):** `lead` + `ba` + `architect` + `dev` + `qa`. Lead бере issue з міткою `ai-ready` і спершу віддає спеку ba: той перевіряє EARS, сценарії й узгодженість з `openapi.yaml` і повертає PASS або питання (тоді issue отримує `ai-needs-input` з коментарем «Spec validation»). Після PASS architect створює гілку `ai/<issue>-<slug>` з `plan.md` і `tasks.md` (кожен крок з REQ-ID), а для нових архітектурних рішень — чернетку ADR. dev у Docker-пісочниці виконує `tasks.md`, пише код і тести та відкриває draft PR. Потім qa незалежно пише тести за сценаріями спеки й контрактом `openapi.yaml` і веде `qa-report.md`. Після PASS lead робить code review: коментарі до рядків у PR, 🔴 blocking повертає dev, 🟡 nit лишає тобі. Якщо qa чи review знайшли проблему, lead повертає задачу dev, разом не більше двох разів. Чистий PR lead переводить з draft у ready і додає тебе в рев'юери; мержиш ти. З етапу 4 команда сама бере задачі з черги, тримається бюджету і щоранку звітує в Slack (див. [Етап 4](#етап-4-черга-без-ручного-старту-бюджети-брифінг)). План наступних етапів — у [docs/roadmap.md](docs/roadmap.md).
+**Stage 3 (current):** `lead` + `ba` + `architect` + `dev` + `qa`. Lead takes an issue labeled `ai-ready` and first hands the spec to ba: ba checks EARS, scenarios, and consistency with `openapi.yaml` and returns PASS or questions (then the issue gets `ai-needs-input` with a "Spec validation" comment). After PASS, architect creates branch `ai/<issue>-<slug>` with `plan.md` and `tasks.md` (each step with a REQ-ID), plus a draft ADR for new architectural decisions. dev, in the Docker sandbox, executes `tasks.md`, writes code and tests, and opens a draft PR. Then qa independently writes tests from the spec scenarios and the `openapi.yaml` contract and maintains `qa-report.md`. After PASS, lead does a code review: line comments on the PR, 🔴 blocking goes back to dev, 🟡 nit is left for you. If qa or review finds a problem, lead returns the task to dev, at most twice in total. Lead moves a clean PR from draft to ready and adds you as a reviewer; you merge. From stage 4 the team takes tasks from the queue on its own, stays within budget, and reports in Slack every morning (see [Stage 4](#stage-4-queue-without-manual-start-budgets-briefing)). The plan for the next stages is in [docs/roadmap.md](docs/roadmap.md).
 
 ```text
-openclaw.json5          конфіг (OPENCLAW_CONFIG_PATH вказує сюди)
+openclaw.json5          config (OPENCLAW_CONFIG_PATH points here)
 workspaces/lead/        SOUL, AGENTS, USER, HEARTBEAT, MEMORY
 workspaces/ba/          SOUL, AGENTS, USER, TOOLS, MEMORY
 workspaces/architect/   SOUL, AGENTS, USER, TOOLS, MEMORY
 workspaces/dev/         SOUL, AGENTS, USER, TOOLS, MEMORY
 workspaces/qa/          SOUL, AGENTS, USER, TOOLS, MEMORY
-skills/                 спільні скіли; scripts/sync-skills.sh копіює їх у workspaces/<agent>/skills
-vendor/dotnet-skills/   скіли .NET від Microsoft (github.com/dotnet/skills), sync-skills.sh теж їх копіює
-CHANGELOG.md            історія змін; кожен PR додає рядок (перевіряє CI)
-sandbox/Dockerfile      .NET 10 SDK + git + gh + psql для пісочниці
-budget.json             ліміти витрат команди й агентів (етап 4)
-scripts/setup.sh        одноразове налаштування
-scripts/automations.sh  розклад: сторож бюджету і ранковий брифінг (етап 4)
-scripts/budget-guard.mjs облік витрат і пауза команди за budget.json
+skills/                 shared skills; scripts/sync-skills.sh copies them into workspaces/<agent>/skills
+vendor/dotnet-skills/   .NET skills from Microsoft (github.com/dotnet/skills), sync-skills.sh copies them too
+CHANGELOG.md            change history; every PR adds a line (checked by CI)
+sandbox/Dockerfile      .NET 10 SDK + git + gh + psql for the sandbox
+budget.json             team and agent spending limits (stage 4)
+scripts/setup.sh        one-time setup
+scripts/automations.sh  schedule: budget guard and morning briefing (stage 4)
+scripts/budget-guard.mjs spend tracking and team pause per budget.json
 ```
 
-## Що потрібно на машині
-- **Windows:** усе запускай у WSL2 (Ubuntu 24.04) з увімкненою WSL-інтеграцією Rancher Desktop. Репо клонуй у `~/src`, не в `/mnt/c`. Git Bash і PowerShell не підходять для `setup.sh` і монтувань пісочниці.
-- Node **24.16+** (OpenClaw 2026.9.8 на Node 22 не ставиться).
-- Rancher Desktop з рушієм **dockerd (moby)**, щоб працювала команда `docker`.
-- API-ключ моделі (у `.env`).
-- П'ять токенів GitHub (по одному на агента; від акаунта-бота можна один classic PAT зі scope `repo` в усіх п'яти змінних). Якщо fine-grained PAT, то лише на `Roman-Sharabura/dopamine-shop` (краще від окремого акаунта-бота, тоді PR агентів можна апрувити):
-  - Resource owner: організація **Roman-Sharabura**. В організації має бути дозволено fine-grained токени: Settings → Personal access tokens → Settings → «Allow access via fine-grained personal access tokens». Якщо там увімкнено погодження, підтверди всі токени в Settings → Personal access tokens → Pending requests.
-  - `GH_TOKEN_LEAD`: Issues, Pull requests — read/write (review і draft → ready), Contents, Commit statuses — read.
-  - `GH_TOKEN_BA`: Contents — read.
-  - `GH_TOKEN_ARCHITECT`: Contents — read/write.
-  - `GH_TOKEN_DEV`: Contents, Pull requests, Issues — read/write.
-  - `GH_TOKEN_QA`: Contents, Pull requests — read/write, Issues — read.
-- Slack-застосунок у твоєму workspace (див. [Slack](#slack)). Telegram необов'язковий і вимкнений у конфігу.
+## What you need on the machine
+- **Windows:** run everything in WSL2 (Ubuntu 24.04) with Rancher Desktop WSL integration enabled. Clone the repo into `~/src`, not `/mnt/c`. Git Bash and PowerShell do not work for `setup.sh` and the sandbox mounts.
+- Node **24.16+** (OpenClaw 2026.9.8 does not install on Node 22).
+- Rancher Desktop with the **dockerd (moby)** engine, so the `docker` command works.
+- A model API key (in `.env`).
+- Five GitHub tokens (one per agent; from a bot account you can use one classic PAT with scope `repo` in all five variables). If fine-grained PATs, then only for `Roman-Sharabura/dopamine-shop` (preferably from a separate bot account, so agent PRs can be approved):
+  - Resource owner: the **Roman-Sharabura** organization. The organization must allow fine-grained tokens: Settings → Personal access tokens → Settings → "Allow access via fine-grained personal access tokens". If approval is enabled there, approve all tokens in Settings → Personal access tokens → Pending requests.
+  - `GH_TOKEN_LEAD`: Issues, Pull requests: read/write (review and draft → ready), Contents, Commit statuses: read.
+  - `GH_TOKEN_BA`: Contents: read.
+  - `GH_TOKEN_ARCHITECT`: Contents: read/write.
+  - `GH_TOKEN_DEV`: Contents, Pull requests, Issues: read/write.
+  - `GH_TOKEN_QA`: Contents, Pull requests: read/write, Issues: read.
+- A Slack app in your workspace (see [Slack](#slack)). Telegram is optional and disabled in the config.
 
-## Запуск
+## Running
 ```bash
 git clone https://github.com/RomanSharabura/agent-team && cd agent-team
-cp .env.example .env        # заповни
-./scripts/setup.sh          # образ пісочниці, мережа і Postgres для тестів, мітки, перевірка конфігу
+cp .env.example .env        # fill in
+./scripts/setup.sh          # sandbox image, network and Postgres for tests, labels, config check
 set -a; source .env; set +a
 export OPENCLAW_CONFIG_PATH="$PWD/openclaw.json5"
-openclaw gateway --verbose  # шлюз у цьому терміналі; Ctrl+C зупиняє
+openclaw gateway --verbose  # gateway in this terminal; Ctrl+C stops it
 ```
 
-## Перший тест
-В іншому терміналі (з тими самими змінними оточення):
+## First test
+In another terminal (with the same environment variables):
 ```bash
-openclaw agents list                                  # lead, ba, architect, dev і qa з потрібними моделями
-openclaw agent --agent lead --message "перевір чергу"   # без Slack
-openclaw logs --follow                                # що відбувається
+openclaw agents list                                  # lead, ba, architect, dev and qa with the right models
+openclaw agent --agent lead --message "check the queue"   # without Slack
+openclaw logs --follow                                # what is happening
 ```
-Або напиши боту в Slack в особисті «перевір чергу». Lead візьме issue [#1](https://github.com/Roman-Sharabura/dopamine-shop/issues/1) (SPEC-001), поставить `ai-in-progress` і передасть його ba. Результат: коментар ba в issue, гілка `ai/001-...` з `plan.md` і `tasks.md` від architect, PR з тестами, `qa-report.md` від qa, review від lead і мітка `ai-review`.
+Or DM the bot in Slack "check the queue". Lead will take issue [#1](https://github.com/Roman-Sharabura/dopamine-shop/issues/1) (SPEC-001), set `ai-in-progress`, and hand it to ba. Result: a ba comment on the issue, branch `ai/001-...` with `plan.md` and `tasks.md` from architect, a PR with tests, `qa-report.md` from qa, a review from lead, and the `ai-review` label.
 
 ## Slack
-Lead слухає особисті повідомлення в Slack через Socket Mode: шлюз сам відкриває з'єднання, тож публічна адреса для WSL не потрібна.
-1. [api.slack.com/apps](https://api.slack.com/apps/new) → **Create New App** → **From a manifest** → твій workspace → встав [`slack/app-manifest.json`](slack/app-manifest.json) → **Create**.
-2. **Basic Information → App-Level Tokens → Generate Token and Scopes**: scope `connections:write`, збережи. Токен `xapp-...` іде в `SLACK_APP_TOKEN`.
-3. **Install App → Install to Workspace**. **Bot User OAuth Token** `xoxb-...` іде в `SLACK_BOT_TOKEN`.
-4. У Slack: свій профіль → ⋮ → **Copy member ID** (`U...`) іде в `SLACK_OWNER_ID`. Лише цей користувач може писати боту.
-5. `./scripts/setup.sh` (поставить плагін `@openclaw/slack`), потім перезапусти шлюз.
-6. Перевір: `openclaw channels list` показує `Slack default: installed, configured, enabled`. Відкрий застосунок у Slack (Apps → Agent Team) і напиши «перевір чергу».
+Lead listens to Slack direct messages via Socket Mode: the gateway opens the connection itself, so no public address is needed for WSL.
+1. [api.slack.com/apps](https://api.slack.com/apps/new) → **Create New App** → **From a manifest** → your workspace → paste [`slack/app-manifest.json`](slack/app-manifest.json) → **Create**.
+2. **Basic Information → App-Level Tokens → Generate Token and Scopes**: scope `connections:write`, save. The `xapp-...` token goes into `SLACK_APP_TOKEN`.
+3. **Install App → Install to Workspace**. The **Bot User OAuth Token** `xoxb-...` goes into `SLACK_BOT_TOKEN`.
+4. In Slack: your profile → ⋮ → **Copy member ID** (`U...`) goes into `SLACK_OWNER_ID`. Only this user can message the bot.
+5. `./scripts/setup.sh` (installs the `@openclaw/slack` plugin), then restart the gateway.
+6. Check: `openclaw channels list` shows `Slack default: installed, configured, enabled`. Open the app in Slack (Apps → Agent Team) and write "check the queue".
 
-Щоб повернути Telegram, розкоментуй блок `channels.telegram` в `openclaw.json5` і заповни `TELEGRAM_*` у `.env`.
+To bring Telegram back, uncomment the `channels.telegram` block in `openclaw.json5` and fill in `TELEGRAM_*` in `.env`.
 
-## Хто з агентів що зробив
-Усі агенти ходять у GitHub одним ботом `dopamine-dev-bot`: токени `GH_TOKEN_<AGENT>` різні, але це PAT того самого акаунта, тож GitHub показує одне ім'я. Агента видно з підпису:
-- коментар, тіло PR чи review починається з `**[lead]**`, `**[dev]**`, `**[qa]**`… (змінна `AGENT_ID` у пісочниці, скіл `github-issue`);
-- коміт має трейлер `Agent: dev` (`git commit --trailer`, скіл `git-commit`), а автор — `dopamine-dev-bot (dev)`; пошта бота та сама, тож коміти лишаються прив'язаними до нього;
-- зміну мітки GitHub показує лише від бота, тому lead змінює мітку тільки разом із підписаним коментарем.
+## Which agent did what
+All agents use GitHub as a single bot, `dopamine-dev-bot`: the `GH_TOKEN_<AGENT>` tokens differ, but they are PATs of the same account, so GitHub shows one name. The agent is identified by its signature:
+- a comment, PR body, or review starts with `**[lead]**`, `**[dev]**`, `**[qa]**`… (the `AGENT_ID` variable in the sandbox, `github-issue` skill);
+- a commit has the trailer `Agent: dev` (`git commit --trailer`, `git-commit` skill), and the author is `dopamine-dev-bot (dev)`; the bot email is the same, so commits stay linked to it;
+- GitHub shows label changes only as from the bot, so lead changes a label only together with a signed comment.
 
-Увімкнути: `git pull && ./scripts/sync-skills.sh`, перезапусти шлюз, потім `openclaw sandbox recreate --agent <id>` для всіх п'яти (нові змінні `AGENT_ID` і `GIT_AUTHOR_NAME` пісочниця бере лише при створенні).
+To enable: `git pull && ./scripts/sync-skills.sh`, restart the gateway, then `openclaw sandbox recreate --agent <id>` for all five (the sandbox picks up the new `AGENT_ID` and `GIT_AUTHOR_NAME` variables only on creation).
 
-Справжня окрема особа для кожного агента (свій аватар у стрічці issue, у мітках і в «Approve») потребує окремого входу в GitHub:
-- **п'ять акаунтів-ботів** (`dopamine-lead-bot`, `dopamine-dev-bot`…): кожному свою пошту, запрошення в організацію і classic PAT `repo` у свою змінну `GH_TOKEN_<AGENT>`; у `GIT_AUTHOR_EMAIL` — пошта відповідного бота. Нічого в коді, крім пошти авторів, міняти не треба. Мінус — п'ять акаунтів і токенів, а машинні акаунти за правилами GitHub має вести людина;
-- **GitHub App на кожного агента** (`dopamine-lead[bot]`…): короткоживучі токени замість PAT і точні права на один репозиторій. Потрібен скрипт, що з приватного ключа App генерує installation token перед запуском агента (токен живе годину), тож це окремий етап.
+A truly separate identity for each agent (its own avatar in the issue timeline, in labels, and in "Approve") requires a separate GitHub login:
+- **five bot accounts** (`dopamine-lead-bot`, `dopamine-dev-bot`…): each with its own email, an organization invite, and a classic `repo` PAT in its own `GH_TOKEN_<AGENT>` variable; `GIT_AUTHOR_EMAIL` set to the matching bot's email. Nothing in the code needs changing except the author emails. Downside: five accounts and tokens, and under GitHub rules machine accounts must be managed by a human;
+- **a GitHub App per agent** (`dopamine-lead[bot]`…): short-lived tokens instead of PATs and precise permissions on a single repository. Needs a script that generates an installation token from the App private key before the agent runs (the token lives an hour), so this is a separate stage.
 
-## Моделі
-Рекомендований набір для OpenAI — у [`.env.example`](.env.example): дешева `gpt-6-luna` для lead і ba, `gpt-6.1-sol` (запасна `gpt-6-sol`) для architect, dev і qa: ціна та сама, що в `gpt-6-sol`, але кешовані токени вдвічі дешевші, а агенти працюють по черзі, тож окремі ліміти TPM їм не потрібні. `gpt-6-astra` вп'ятеро дорожча за sol на вхідних токенах і вдесятеро на кешованих; ймовірно, саме dev на ній дав основну частину тих ~$16 за одну задачу (перевір `node scripts/budget-guard.mjs --report`).
-- **Запасна модель.** У кожного агента `model: { primary, fallbacks }` (змінні `*_FALLBACK_MODEL`). OpenAI рахує ліміт токенів на хвилину (TPM) окремо для кожної моделі, тож на 429 OpenClaw після короткого повтору переходить на запасну, а не обриває хід.
-- **Контекст lead.** Головна сесія lead (Slack і всі передачі) раніше росла без меж: кожен виклик інструмента відправляв її цілком, звідси ~59k токенів на запит і 200k TPM за хвилину. Тепер сесії починаються заново щодня о 04:00 (`session.reset`), а для `gpt-6-luna` діє ліміт активного контексту 64k (`models.providers.openai.models`), після якого OpenClaw стискає історію. Змінив `LEAD_MODEL` — зміни й `id` у цьому записі.
-- Скільки коштує кожен агент: `node scripts/budget-guard.mjs --report`. Свій ліміт TPM для моделей видно на platform.openai.com/settings/organization/limits; він росте з tier організації.
+## Models
+The recommended OpenAI set is in [`.env.example`](.env.example): cheap `gpt-6-luna` for lead and ba, `gpt-6.1-sol` (fallback `gpt-6-sol`) for architect, dev, and qa: same price as `gpt-6-sol`, but cached tokens are half the price, and the agents work in turn, so they don't need separate TPM limits. `gpt-6-astra` is 5x more expensive than sol on input tokens and 10x on cached ones; most likely dev on it accounted for most of the ~$16 for a single task (check `node scripts/budget-guard.mjs --report`).
+- **Fallback model.** Each agent has `model: { primary, fallbacks }` (the `*_FALLBACK_MODEL` variables). OpenAI counts the tokens-per-minute (TPM) limit separately per model, so on a 429 OpenClaw, after a short retry, switches to the fallback instead of aborting the turn.
+- **Lead context.** The lead main session (Slack and all handoffs) used to grow without bound: every tool call sent it in full, hence ~59k tokens per request and 200k TPM per minute. Now sessions restart daily at 04:00 (`session.reset`), and `gpt-6-luna` has a 64k active context limit (`models.providers.openai.models`), after which OpenClaw compacts the history. If you change `LEAD_MODEL`, change the `id` in that entry too.
+- Cost per agent: `node scripts/budget-guard.mjs --report`. Your TPM limit per model is shown at platform.openai.com/settings/organization/limits; it grows with the organization tier.
 
-## Етап 4: черга без ручного старту, бюджети, брифінг
-Команда сама бере задачі з черги: heartbeat lead раз на 10 хвилин (08:00–23:00) доводить почате (`pipeline-resume`) і бере наступне `ai-ready`. Зверху — два завдання в планувальнику OpenClaw:
-- **Budget guard** (кожні 10 хв, без виклику моделі): `scripts/budget-guard.mjs` бере витрати кожного агента з `openclaw gateway usage-cost`, пише знімок у `workspaces/lead/state/budget.json` і порівнює з лімітами з [`budget.json`](budget.json). Понад 80% — попередження в Slack. Понад 100% — `openclaw system heartbeat disable` і повідомлення: агент дограє поточний крок, а lead перед наступною передачею зупиняється з `ai-blocked` і конвертом у коментарі. Наступної доби (UTC), коли витрати в нормі, сторож сам вмикає heartbeat, і потік продовжується з того ж кроку.
-- **Morning briefing** (пн–пт о 09:00 за Києвом): lead за скілом `morning-briefing` пише в Slack, що зроблено, що в роботі, що чекає на тебе, прогрес цілі спринту і витрати (вчора, з початку місяця, ≈ $ на PR).
+## Stage 4: queue without manual start, budgets, briefing
+The team takes tasks from the queue on its own: the lead heartbeat every 10 minutes (08:00–23:00) finishes what was started (`pipeline-resume`) and takes the next `ai-ready`. On top of that, two jobs in the OpenClaw scheduler:
+- **Budget guard** (every 10 min, no model call): `scripts/budget-guard.mjs` gets each agent's spend from `openclaw gateway usage-cost`, writes a snapshot to `workspaces/lead/state/budget.json`, and compares it with the limits in [`budget.json`](budget.json). Over 80%: a warning in Slack. Over 100%: `openclaw system heartbeat disable` and a message: the agent finishes its current step, and lead stops before the next handoff with `ai-blocked` and an envelope in a comment. The next day (UTC), when spend is within limits, the guard re-enables the heartbeat itself, and the pipeline continues from the same step.
+- **Morning briefing** (Mon–Fri at 09:00 Kyiv time): lead, using the `morning-briefing` skill, posts in Slack what is done, what is in progress, what is waiting on you, sprint goal progress, and spend (yesterday, month to date, ≈ $ per PR).
 
-**Ціль спринту** — відкритий milestone у dopamine-shop з найближчим `due_on` (опис milestone — сама ціль). Lead спершу бере `ai-ready` з цього milestone, а брифінг показує його прогрес. Milestone необов'язковий: без нього черга йде від найстарішого.
+**Sprint goal**: the open milestone in dopamine-shop with the nearest `due_on` (the milestone description is the goal itself). Lead takes `ai-ready` from that milestone first, and the briefing shows its progress. The milestone is optional: without one the queue goes oldest first.
 
-Увімкнути:
-1. `git pull && ./scripts/sync-skills.sh`, перезапусти шлюз.
-2. Перевір ліміти в `budget.json` (долари — оцінка OpenClaw за цінами моделей, `tokens` — страховка, якщо ціни моделі OpenClaw не знає). Зміни в `budget.json` діють з наступного запуску сторожа, перезапуск не потрібен.
-3. При запущеному шлюзі: `./scripts/automations.sh`. Повторний запуск оновлює ті самі завдання. Інший час брифінгу — `BRIEFING_CRON` і `BRIEFING_TZ` у `.env`.
-4. Перевір: `node scripts/budget-guard.mjs --report` (таблиця витрат, нічого не змінює), `openclaw automations list --agent lead`, брифінг одразу — `openclaw automations run <id Morning briefing>`.
-5. Страховка понад сторожа: ліміт витрат проєкту в кабінеті OpenAI (Settings → Limits). Сторож бачить витрати із запізненням до 10 хвилин і не перериває крок, що вже йде.
+To enable:
+1. `git pull && ./scripts/sync-skills.sh`, restart the gateway.
+2. Check the limits in `budget.json` (dollars are OpenClaw's estimate from model prices, `tokens` is a fallback if OpenClaw doesn't know the model's prices). Changes to `budget.json` take effect from the next guard run, no restart needed.
+3. With the gateway running: `./scripts/automations.sh`. Re-running updates the same jobs. For a different briefing time, set `BRIEFING_CRON` and `BRIEFING_TZ` in `.env`.
+4. Check: `node scripts/budget-guard.mjs --report` (spend table, changes nothing), `openclaw automations list --agent lead`, briefing right now: `openclaw automations run <id Morning briefing>`.
+5. A safeguard beyond the guard: a project spend limit in the OpenAI dashboard (Settings → Limits). The guard sees spend with up to a 10-minute delay and does not interrupt a step already running.
 
-Витрати також видно в Control UI (Usage) і командами `openclaw gateway usage-cost --all-agents`, `openclaw status --usage`.
+Spend is also visible in the Control UI (Usage) and via `openclaw gateway usage-cost --all-agents`, `openclaw status --usage`.
 
-Чому не Paperclip: Paperclip підключається до OpenClaw 2026.9.8 (адаптер `openclaw_gateway`, протокол v4) і рахує витрати лише тих запусків, які стартує сам. У нас увесь ланцюжок ba → architect → dev → qa запускає lead усередині OpenClaw (`sessions_spawn` і heartbeat), тож бюджети Paperclip не зупинили б dev чи qa, а для обліку довелося б перенести оркестрацію з OpenClaw у Paperclip і тримати ще один сервер з базою. Нативний облік OpenClaw бачить кожного агента, включно з субагентами.
+Why not Paperclip: Paperclip connects to OpenClaw 2026.9.8 (the `openclaw_gateway` adapter, protocol v4) and tracks spend only for runs it starts itself. Here the entire ba → architect → dev → qa chain is launched by lead inside OpenClaw (`sessions_spawn` and heartbeat), so Paperclip budgets would not stop dev or qa, and tracking would require moving orchestration from OpenClaw to Paperclip and running yet another server with a database. OpenClaw's native tracking sees every agent, including subagents.
 
-## Адмінка web/admin (етап 5)
+## Admin UI web/admin (stage 5)
 1. `git pull && ./scripts/sync-skills.sh`
-2. Перебудуй образ пісочниці (у ньому з'явився Node 24): `docker build -t agent-team/dotnet-sandbox:10 sandbox/`
-3. Пересоздай пісочниці, щоб вони взяли новий образ: `openclaw sandbox recreate --agent dev`, те саме для `qa` і `architect`.
-4. Перевір: `docker run --rm agent-team/dotnet-sandbox:10 node --version` показує `v24.x`. Перезапусти шлюз.
-Спека лише для UI може не мати свого `openapi.yaml`: у розділі «Контракт» вона посилається на наявний (зразок — `specs/003-admin-ui-edit-user`).
+2. Rebuild the sandbox image (it now includes Node 24): `docker build -t agent-team/dotnet-sandbox:10 sandbox/`
+3. Recreate the sandboxes so they pick up the new image: `openclaw sandbox recreate --agent dev`, and the same for `qa` and `architect`.
+4. Check: `docker run --rm agent-team/dotnet-sandbox:10 node --version` shows `v24.x`. Restart the gateway.
+A UI-only spec may have no `openapi.yaml` of its own: in its "Contract" section it references an existing one (example: `specs/003-admin-ui-edit-user`).
 
-## Перехід на етап 3 (ba і architect)
+## Moving to stage 3 (ba and architect)
 1. `git pull && ./scripts/sync-skills.sh`
-2. У `.env` додай `BA_MODEL`, `ARCHITECT_MODEL`, `GH_TOKEN_BA` і `GH_TOKEN_ARCHITECT` (див. `.env.example`). Токен бота з `GH_TOKEN_DEV` підходить для обох.
-3. Ключ моделі для нових агентів: `./scripts/setup.sh` (кладе ключ в auth-профілі всіх п'яти) або вручну на тимчасовій копії конфігу, як у розділі «Перехід з етапу 1», для `--agent ba` і `--agent architect`.
-4. `openclaw config validate`, потім перезапусти шлюз. Пісочниці ba й architect створяться при першому запуску.
+2. In `.env`, add `BA_MODEL`, `ARCHITECT_MODEL`, `GH_TOKEN_BA`, and `GH_TOKEN_ARCHITECT` (see `.env.example`). The bot token from `GH_TOKEN_DEV` works for both.
+3. Model key for the new agents: `./scripts/setup.sh` (puts the key into the auth profiles of all five) or manually on a temporary copy of the config, as in "Moving from stage 1", for `--agent ba` and `--agent architect`.
+4. `openclaw config validate`, then restart the gateway. The ba and architect sandboxes are created on first run.
 
-## Увімкнути review від lead
+## Enabling review by lead
 1. `git pull && ./scripts/sync-skills.sh`
-2. Дай `GH_TOKEN_LEAD` права Pull requests — read/write і Commit statuses — read (на GitHub: Settings → Developer settings → Fine-grained tokens → токен lead → Edit). Токен не змінюється, `.env` чіпати не треба.
-3. Перезапусти шлюз.
+2. Give `GH_TOKEN_LEAD` the permissions Pull requests: read/write and Commit statuses: read (on GitHub: Settings → Developer settings → Fine-grained tokens → lead token → Edit). The token does not change, no need to touch `.env`.
+3. Restart the gateway.
 
-## Перехід з етапу 1
+## Moving from stage 1
 1. `git pull && ./scripts/sync-skills.sh`
-2. У `.env` додай `QA_MODEL` і `GH_TOKEN_QA` (див. `.env.example`).
-3. Ключ моделі для qa: `./scripts/setup.sh` або `printf "%s\n" "$OPENAI_API_KEY" | openclaw models auth paste-api-key --provider openai --agent qa` на тимчасовій копії конфігу.
-4. Перезапусти шлюз.
+2. In `.env`, add `QA_MODEL` and `GH_TOKEN_QA` (see `.env.example`).
+3. Model key for qa: `./scripts/setup.sh` or `printf "%s\n" "$OPENAI_API_KEY" | openclaw models auth paste-api-key --provider openai --agent qa` on a temporary copy of the config.
+4. Restart the gateway.
 
-## Якщо щось не так
-- Control UI просить «Gateway secret», або `openclaw logs` пише `requires credentials`: у `.env` немає `OPENCLAW_GATEWAY_TOKEN`. Запусти `./scripts/setup.sh` (згенерує токен), `set -a; source .env; set +a` і перезапусти шлюз. Потім `openclaw dashboard --no-open` дає посилання з одноразовим входом. `openclaw doctor` на `openclaw.json5` не запускай: він переписує файл.
-- `No route-compatible authentication source`: ключ моделі не в auth-профілі агента. Повтори `./scripts/setup.sh` з заповненим `.env` (або `printf "%s\n" "$OPENAI_API_KEY" | openclaw models auth paste-api-key --provider openai --agent lead`, те саме для `ba`, `architect`, `dev` і `qa`).
-- `agents/main/agent` замість `agents/lead/agent` у виводі: у цій вкладці не завантажено `.env` і `OPENCLAW_CONFIG_PATH`.
-- `Gateway not reachable`: шлюз зупинено; запусти `openclaw gateway --verbose` або використай `openclaw agent --local ...`.
-- Агент пише, що скіли недоступні в пісочниці: запусти `./scripts/sync-skills.sh` (після кожного `git pull`, що змінює `skills/`) і перезапусти шлюз.
+## Troubleshooting
+- The Control UI asks for a "Gateway secret", or `openclaw logs` prints `requires credentials`: `.env` has no `OPENCLAW_GATEWAY_TOKEN`. Run `./scripts/setup.sh` (generates the token), `set -a; source .env; set +a`, and restart the gateway. Then `openclaw dashboard --no-open` gives a link with a one-time login. Do not run `openclaw doctor` on `openclaw.json5`: it rewrites the file.
+- `No route-compatible authentication source`: the model key is not in the agent's auth profile. Rerun `./scripts/setup.sh` with a filled-in `.env` (or `printf "%s\n" "$OPENAI_API_KEY" | openclaw models auth paste-api-key --provider openai --agent lead`, and the same for `ba`, `architect`, `dev`, and `qa`).
+- `agents/main/agent` instead of `agents/lead/agent` in the output: `.env` and `OPENCLAW_CONFIG_PATH` are not loaded in this tab.
+- `Gateway not reachable`: the gateway is stopped; run `openclaw gateway --verbose` or use `openclaw agent --local ...`.
+- An agent still answers in Ukrainian: `git pull`, restart the gateway, then start a fresh session (`/new` in the chat with the agent, or wait for the daily 04:00 reset). An old session keeps its Ukrainian history, and the model tends to continue in that language. Notes agents wrote earlier in `workspaces/<agent>/memory/` may also be Ukrainian; the Language rule in AGENTS.md overrides them, or delete them.
+- An agent says skills are unavailable in the sandbox: run `./scripts/sync-skills.sh` (after every `git pull` that changes `skills/`) and restart the gateway.
 
-## Скіли .NET від Microsoft
-dev і qa мають частину скілів з [dotnet/skills](https://github.com/dotnet/skills) (той самий marketplace `dotnet-agent-skills`, що й у Claude Code). Це звичайні `SKILL.md`, тому OpenClaw читає їх без змін. Ставимо не плагіни цілком, а окремі скіли: плагінні скіли OpenClaw не видно в пісочниці, а зайві скіли (MAUI, Blazor, WinForms) лише з'їдають промпт.
-- Список і коміт: [vendor/dotnet-skills/SOURCE.md](vendor/dotnet-skills/SOURCE.md); хто що отримує: `DOTNET_SKILLS` у `scripts/sync-skills.sh` і `skills` агента в `openclaw.json5`.
-- Оновити: `./scripts/update-dotnet-skills.sh` (або з комітом), переглянь diff, закоміть, `./scripts/sync-skills.sh`, перезапусти шлюз.
-- Додати скіл: допиши `<плагін>/<скіл>` у `scripts/update-dotnet-skills.sh`, назву в `DOTNET_SKILLS` і в `skills` агента.
+## .NET skills from Microsoft
+dev and qa get some of the skills from [dotnet/skills](https://github.com/dotnet/skills) (the same `dotnet-agent-skills` marketplace as in Claude Code). They are plain `SKILL.md` files, so OpenClaw reads them unchanged. We install individual skills rather than whole plugins: OpenClaw plugin skills are not visible in the sandbox, and unneeded skills (MAUI, Blazor, WinForms) just eat the prompt.
+- List and commit: [vendor/dotnet-skills/SOURCE.md](vendor/dotnet-skills/SOURCE.md); who gets what: `DOTNET_SKILLS` in `scripts/sync-skills.sh` and the agent's `skills` in `openclaw.json5`.
+- Update: `./scripts/update-dotnet-skills.sh` (or with a commit), review the diff, commit, `./scripts/sync-skills.sh`, restart the gateway.
+- Add a skill: append `<plugin>/<skill>` in `scripts/update-dotnet-skills.sh`, and the name in `DOTNET_SKILLS` and in the agent's `skills`.
 
-## Як дати команді нову задачу
-1. Додай `specs/<NNN-slug>/spec.md` і `openapi.yaml` у `main` dopamine-shop зі `status: ready` (для спеки лише на адмінку `openapi.yaml` не потрібен, див. «Адмінка web/admin»).
-2. Створи issue з рядком `Spec: specs/<NNN-slug>` в описі і міткою `ai-ready`.
-3. Lead підхопить його на heartbeat (кожні 10 хв, 08:00–23:00) або за командою в Slack. Issues з milestone цілі спринту йдуть першими (див. «Етап 4»).
+## How to give the team a new task
+1. Add `specs/<NNN-slug>/spec.md` and `openapi.yaml` to dopamine-shop `main` with `status: ready` (an admin-only spec doesn't need `openapi.yaml`, see "Admin UI web/admin").
+2. Create an issue with the line `Spec: specs/<NNN-slug>` in the description and the `ai-ready` label.
+3. Lead picks it up on the heartbeat (every 10 min, 08:00–23:00) or on a Slack command. Issues in the sprint goal milestone go first (see "Stage 4").
 
-## Мітки (машина станів)
-`ai-ready` → `ai-in-progress` (ba → architect → dev → qa → review lead) → `ai-review` → approve і merge людиною. Побічні: `ai-needs-input`, `ai-blocked`.
+## Labels (state machine)
+`ai-ready` → `ai-in-progress` (ba → architect → dev → qa → lead review) → `ai-review` → approve and merge by a human. Side states: `ai-needs-input`, `ai-blocked`.
 
-## Безпека
-- Агенти працюють у Docker-пісочниці без доступу до хоста, `~/.ssh` і твоїх git-облікових даних. У них є лише власний PAT.
-- Docker-сокет у пісочницю не потрапляє. Замість Testcontainers інтеграційні тести dopamine-shop у пісочниці ходять у спільний контейнер `agent-team-postgres` у мережі `agent-team` (змінна `TEST_POSTGRES_CONNECTION`). Кожен тест-клас створює й видаляє власну БД, тож паралельні прогони не заважають один одному.
-- У `main` нічого не потрапляє без тебе: налаштуй branch protection у dopamine-shop (Settings → Branches: PR обов'язковий, CI `build` обов'язковий).
-- Текст issue і спек агенти читають як дані, а не як інструкції. Це записано в AGENTS.md кожного агента.
-- SOUL.md, AGENTS.md і скіли під git: будь-яку зміну видно в diff.
+## Security
+- Agents work in a Docker sandbox with no access to the host, `~/.ssh`, or your git credentials. They only have their own PAT.
+- The Docker socket is not exposed to the sandbox. Instead of Testcontainers, dopamine-shop integration tests in the sandbox use the shared `agent-team-postgres` container on the `agent-team` network (the `TEST_POSTGRES_CONNECTION` variable). Each test class creates and drops its own DB, so parallel runs don't interfere with each other.
+- Nothing reaches `main` without you: set up branch protection in dopamine-shop (Settings → Branches: PR required, CI `build` required).
+- Agents read issue and spec text as data, not as instructions. This is written in each agent's AGENTS.md.
+- SOUL.md, AGENTS.md, and skills are under git: any change is visible in the diff.

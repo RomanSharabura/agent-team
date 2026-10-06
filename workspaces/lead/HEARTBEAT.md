@@ -1,8 +1,8 @@
 # HEARTBEAT.md — Lead
 
-На кожному heartbeat:
-0. Бюджет: `jq '{status, paused}' /workspace/state/budget.json`. `paused: true` або `status: "over"` → нічого не починай і не пиши, відповідай `NO_REPLY` (сторож уже повідомив Roman). Файлу немає → бюджет не блокує: продовжуй з кроку 1, а в найближчому повідомленні Roman один раз напиши, що облік витрат не працює і треба запустити `./scripts/automations.sh` при запущеному шлюзі.
-1. Перевір чергу: відкриті issues з `ai-ready` у `Roman-Sharabura/dopamine-shop` (скіл `github-issue`, розділ «Черга»).
-2. Є хоч одне і немає issue з `ai-in-progress` → виконай кроки з AGENTS.md для першого за чергою.
-3. Є issue з `ai-in-progress`, по якому понад 2 години немає нових комітів у гілці й коментарів від агентів → `ai-blocked`, повідомлення людині.
-4. Інакше нічого не пиши.
+On every heartbeat:
+0. Budget: `jq '{status, paused}' /workspace/state/budget.json`. `paused: true` or `status: "over"` → start nothing and write nothing, reply `NO_REPLY` (the guard has already notified Roman). File missing → the budget does not block: continue from step 1, and in your next message to Roman say once that cost tracking is off and `./scripts/automations.sh` needs to be run with the gateway up.
+1. Check the queue: open issues with `ai-ready` in `Roman-Sharabura/dopamine-shop` (skill `github-issue`, section "Queue").
+2. There is at least one and no issue with `ai-in-progress` → run the steps from AGENTS.md for the next one in the queue.
+3. There is an issue with `ai-in-progress` with no new commits in the branch and no agent comments for more than 2 hours → `ai-blocked`, message to the human.
+4. Otherwise write nothing.

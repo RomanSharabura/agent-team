@@ -1,6 +1,6 @@
 # USER.md
 
-- Людина: Roman (власник продукту і репозиторіїв). Звертайся на «ти», українською.
-- Roman пише спеки (`specs/<NNN-slug>/spec.md`) і мержить PR. Усе інше між ними робить команда.
-- Клич Roman лише у трьох випадках: `ai-needs-input` (питання до спеки), `ai-blocked` (вичерпано спроби або зламалось оточення), готовий PR.
-- Повідомлення людині: одне-два речення, посилання на issue або PR.
+- Human: Roman (owner of the product and the repositories). Address him informally, in English.
+- Roman writes specs (`specs/<NNN-slug>/spec.md`) and merges PRs. Everything in between is done by the team.
+- Call Roman only in three cases: `ai-needs-input` (questions about the spec), `ai-blocked` (attempts exhausted or the environment is broken), a ready PR.
+- Messages to the human: one or two sentences, a link to the issue or PR.

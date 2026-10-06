@@ -5,22 +5,22 @@ metadata: { "openclaw": { "requires": { "bins": ["dotnet", "git"] } } }
 ---
 # Spec → tests
 
-Джерело очікувань — `spec.md` і `openapi.yaml`, а не код. Зразок форми тестів: `tests/DopamineShop.IntegrationTests/Modules/Users/ListUsersTests.cs` (SPEC-001).
+The source of expectations is `spec.md` and `openapi.yaml`, not the code. Example of the test shape: `tests/DopamineShop.IntegrationTests/Modules/Users/ListUsersTests.cs` (SPEC-001).
 
-## Куди писати
-- HTTP-сценарії: `tests/DopamineShop.IntegrationTests/Modules/<M>/<F>Tests.cs`. Якщо файл уже є від dev, додавай класи в нього, не переписуй чужі.
-- Контракт: `tests/DopamineShop.IntegrationTests/Modules/<M>/<F>ContractTests.cs`.
-- Нових проєктів, пакетів і хелперів у `Infrastructure/` не створюй. Є `ApiFactory`, `factory.SeedAsync<TDbContext>(...)`, `factory.CreateClient()`, FluentAssertions і xUnit.
+## Where to write
+- HTTP scenarios: `tests/DopamineShop.IntegrationTests/Modules/<M>/<F>Tests.cs`. If dev has already created the file, add classes to it; do not rewrite others' classes.
+- Contract: `tests/DopamineShop.IntegrationTests/Modules/<M>/<F>ContractTests.cs`.
+- Do not create new projects, packages or helpers in `Infrastructure/`. Available: `ApiFactory`, `factory.SeedAsync<TDbContext>(...)`, `factory.CreateClient()`, FluentAssertions and xUnit.
 
-## 1. Сценарій → тест
-Для кожного Gherkin-сценарію:
-- назва `REQ_00x_<сценарій_англійською_snake_case>` і `[Trait("Req", "REQ-00x")]`;
-- `Given` → засів даних через доменні фабрики (`User.Register(...)`), `When` → один HTTP-запит, `Then` → перевірки;
-- тести, що рахують записи (`totalCount`, кількість `items`), клади в окремий клас з власним `IClassFixture<ApiFactory>`: у кожного класу своя порожня БД;
-- перевіряй усе, що каже `Then`: код, порядок, кількість, конкретні значення, а не лише «не порожньо».
+## 1. Scenario → test
+For every Gherkin scenario:
+- name `REQ_00x_<scenario_in_english_snake_case>` and `[Trait("Req", "REQ-00x")]`;
+- `Given` → data seeding through domain factories (`User.Register(...)`), `When` → one HTTP request, `Then` → assertions;
+- put tests that count records (`totalCount`, number of `items`) in a separate class with its own `IClassFixture<ApiFactory>`: each class has its own empty DB;
+- check everything `Then` says: code, order, count, specific values, not just "not empty".
 
-## 2. Контракт з openapi.yaml
-Тести dev десеріалізують відповідь у DTO самого застосунку, тож перейменування поля з обох боків вони не помітять. Ти читай сирий JSON:
+## 2. Contract from openapi.yaml
+Dev's tests deserialize the response into the application's own DTO, so they will not notice a field renamed on both sides. You read the raw JSON:
 
 ```csharp
 var json = await response.Content.ReadAsStringAsync();
@@ -30,55 +30,55 @@ root.EnumerateObject().Select(p => p.Name).Should().Contain(["items", "page", "p
 root.GetProperty("page").ValueKind.Should().Be(JsonValueKind.Number);
 ```
 
-Для кожного шляху й методу з `openapi.yaml`:
-- кожен описаний код відповіді досяжний, і `Content-Type` збігається (`application/json`, `application/problem+json`);
-- усі `required` поля є, назви в camelCase точно як у схемі, типи збігаються (`integer`, `string`, `array`, `format: date-time`, `format: uuid`);
-- `enum` у відповідях містить лише дозволені значення;
-- параметри: значення за замовчуванням (`default`), межі (`minimum`, `maximum`, `maxLength`) — тест на межу і на одиницю за межею;
-- 400: тіло `ValidationProblemDetails`, `status: 400`, у `errors` ключі — імена параметрів запиту.
+For every path and method in `openapi.yaml`:
+- every documented response code is reachable, and `Content-Type` matches (`application/json`, `application/problem+json`);
+- all `required` fields are present, names in camelCase exactly as in the schema, types match (`integer`, `string`, `array`, `format: date-time`, `format: uuid`);
+- `enum` in responses contains only allowed values;
+- parameters: default values (`default`), limits (`minimum`, `maximum`, `maxLength`) — a test at the limit and one past it;
+- 400: body is `ValidationProblemDetails`, `status: 400`, the keys in `errors` are the request parameter names.
 
-## 3. Вимоги поза сценаріями
-Пройдись по кожній EARS-вимозі (`WHEN ... THE SYSTEM SHALL ...`, `IF ... THEN ...`). Якщо умова має випадок, якого немає в Gherkin (порожній результат, межа, комбінація фільтрів), додай тест з тим самим `Trait`.
+## 3. Requirements beyond the scenarios
+Go through every EARS requirement (`WHEN ... THE SYSTEM SHALL ...`, `IF ... THEN ...`). If a condition has a case not in the Gherkin (empty result, boundary, combination of filters), add a test with the same `Trait`.
 
-## 4. Знахідки
-Тест червоний → спершу перевір себе: перечитай вимогу, засів, URL. Помиляється код → залиш тест червоним і запиши знахідку:
+## 4. Findings
+A test is red → first check yourself: reread the requirement, the seeding, the URL. The code is wrong → leave the test red and record a finding:
 
 ```text
-REQ-004 — status=blocked повертає лише заблокованих — повертає всіх (3 замість 1) — REQ_004_filter_returns_only_blocked_users
+REQ-004 — status=blocked returns only blocked users — returns all (3 instead of 1) — REQ_004_filter_returns_only_blocked_users
 ```
 
-## UI-спеки (`web/admin`)
-Спека про адмінку → тести сторінки на Vitest + Testing Library замість HTTP-тестів (форму тестів і хелпери див. скіл `admin-ui-feature`, розділ «Тести»).
-- Файл `src/features/<module>/<feature>/<Name>.qa.test.tsx` поруч з тестами dev: їхні файли не переписуй.
-- `describe('<Name> — qa (SPEC-NNN)')`, кожен `it` починається з REQ-ID і назви сценарію: `it('REQ-004 порожнє ім’я', ...)`.
-- `Given` → `mockApi` з даними, `When` → дії `userEvent`, `Then` → усе, що каже сценарій: точний текст, роль (`alert`, `status`), стан кнопки, кількість запитів, метод і тіло (`await request.clone().json()`).
-- Контракт замість пункту 2: тіло запиту має лише поля зі схеми `requestBody` у `openapi.yaml`, з тими самими межами; UI обробляє кожен код з `responses` (тест на кожен).
-- Знахідка має той самий формат, тест — назва `it`.
-- Gate: `admin-ui-gate` (і `dotnet-quality-gate`, якщо diff зачіпає .NET). У звіті розділ «Контракт» — запити UI до API, «Quality gate» — `npm run check`.
+## UI specs (`web/admin`)
+Spec about the admin UI → page tests on Vitest + Testing Library instead of HTTP tests (for the test shape and helpers see skill `admin-ui-feature`, section "Tests").
+- File `src/features/<module>/<feature>/<Name>.qa.test.tsx` next to dev's tests: do not rewrite their files.
+- `describe('<Name> — qa (SPEC-NNN)')`, every `it` starts with the REQ-ID and the scenario name: `it('REQ-004 empty name', ...)`.
+- `Given` → `mockApi` with data, `When` → `userEvent` actions, `Then` → everything the scenario says: exact text, role (`alert`, `status`), button state, number of requests, method and body (`await request.clone().json()`).
+- Contract instead of item 2: the request body has only the fields from the `requestBody` schema in `openapi.yaml`, with the same limits; the UI handles every code from `responses` (a test for each).
+- A finding has the same format; the test is the `it` name.
+- Gate: `admin-ui-gate` (and `dotnet-quality-gate` if the diff touches .NET). In the report, the "Contract" section covers the UI's requests to the API, "Quality gate" — `npm run check`.
 
 ## 5. qa-report.md
-У папці спеки. Якщо файл уже є (його міг лишити dev), перепиши повністю.
+In the spec folder, in English. If the file already exists (dev might have left it), rewrite it completely.
 
 ```markdown
 # QA report — SPEC-NNN
 
-Дата: YYYY-MM-DD. Гілка: ai/<issue>-<slug>. Спроба: N. Вердикт: PASS | FAIL.
+Date: YYYY-MM-DD. Branch: ai/<issue>-<slug>. Attempt: N. Verdict: PASS | FAIL.
 
-## Матриця REQ → сценарій → тест → статус
-| REQ | Сценарій | Тести | Автор | Статус |
+## Matrix REQ → scenario → test → status
+| REQ | Scenario | Tests | Author | Status |
 | --- | --- | --- | --- | --- |
-| REQ-001 | <назва з Gherkin> | REQ_001_... | qa / dev | PASS / FAIL |
+| REQ-001 | <name from Gherkin> | REQ_001_... | qa / dev | PASS / FAIL |
 
-## Контракт (openapi.yaml)
-| Перевірка | Тест | Статус |
+## Contract (openapi.yaml)
+| Check | Test | Status |
 | --- | --- | --- |
-| GET /admin/users 200: required-поля й типи | Contract_list_users_200_shape | PASS |
+| GET /admin/users 200: required fields and types | Contract_list_users_200_shape | PASS |
 
-## Знахідки
-- REQ-00x — очікувано — фактично — тест (або «немає»)
+## Findings
+- REQ-00x — expected — actual — test (or "none")
 
 ## Quality gate
-build, format, test: результат і кількість тестів (усього / нових від qa / червоних).
+build, format, test: result and number of tests (total / new from qa / red).
 ```
 
-REQ без жодного зеленого тесту = FAIL. Поле `Автор` показує, чий тест закриває вимогу: так видно, що перевірка незалежна.
+A REQ without a single green test = FAIL. The `Author` field shows whose test covers the requirement: this makes it visible that the check is independent.

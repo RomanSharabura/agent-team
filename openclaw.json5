@@ -1,35 +1,35 @@
-// Конфіг команди Spec → PR. Етап 3: lead → ba → architect → dev → qa; code review робить lead.
-// Етап 5 (частково): dev і qa працюють і з адмінкою web/admin (Node 24 у пісочниці, скіли admin-ui-*).
-// Запуск: export OPENCLAW_CONFIG_PATH="$AGENT_TEAM_DIR/openclaw.json5" (див. README).
-// Звірено з документацією OpenClaw 2026.9.8.
+// Spec → PR team config. Stage 3: lead → ba → architect → dev → qa; lead does the code review.
+// Stage 5 (partial): dev and qa also work on the web/admin admin UI (Node 24 in the sandbox, admin-ui-* skills).
+// Run: export OPENCLAW_CONFIG_PATH="$AGENT_TEAM_DIR/openclaw.json5" (see README).
+// Checked against the OpenClaw 2026.9.8 documentation.
 {
-  // Без gateway.mode шлюз відмовляється стартувати (openclaw gateway).
-  // Токен шлюзу з .env (setup.sh генерує): без нього Control UI (openclaw dashboard) просить токен,
-  // якого ніде немає, а openclaw logs пише «requires credentials». CLI бере ту саму змінну сам.
+  // Without gateway.mode the gateway refuses to start (openclaw gateway).
+  // Gateway token from .env (setup.sh generates it): without it the Control UI (openclaw dashboard) asks for a token
+  // that exists nowhere, and openclaw logs prints "requires credentials". The CLI reads the same variable itself.
   gateway: { mode: "local", bind: "loopback", auth: { mode: "token", token: "${OPENCLAW_GATEWAY_TOKEN}" } },
-  // Ключі API зберігаються не тут, а в auth-профілях кожного агента (scripts/setup.sh).
-  // OpenAI за API-ключем іде через вбудований рантайм OpenClaw, а не через Codex.
+  // API keys are not stored here but in each agent's auth profile (scripts/setup.sh).
+  // OpenAI with an API key goes through the built-in OpenClaw runtime, not through Codex.
   models: {
     providers: {
       openai: {
         agentRuntime: { id: "openclaw" },
-        // Ліміт активного контексту для моделі lead (типово 272k). Без нього головна сесія lead
-        // з Slack-розмовами і всіма передачами росте до сотень тисяч токенів, і кожен виклик
-        // інструмента відправляє її цілком: так lead вперся в ліміт 200k TPM на gpt-6-luna.
-        // На 64k OpenClaw раніше стискає історію. Ціну й вікно моделі OpenClaw бере з каталогу.
-        // Змінив LEAD_MODEL → зміни id тут.
+        // Active context limit for the lead model (default 272k). Without it the lead main session
+        // with Slack conversations and all handoffs grows to hundreds of thousands of tokens, and every tool
+        // call sends it in full: that is how lead hit the 200k TPM limit on gpt-6-luna.
+        // At 64k OpenClaw compacts history earlier. OpenClaw takes the model price and window from the catalog.
+        // Changed LEAD_MODEL → change the id here.
         models: [{ id: "gpt-6-luna", name: "GPT-6 Luna", contextTokens: 64000 }],
       },
     },
   },
-  // Сесії починаються заново щодня о 04:00 (поза activeHours heartbeat). Стан потоку живе в GitHub,
-  // тож lead нічого не втрачає: незавершене issue підхопить pipeline-resume на першому heartbeat.
+  // Sessions restart daily at 04:00 (outside heartbeat activeHours). Pipeline state lives in GitHub,
+  // so lead loses nothing: pipeline-resume picks up an unfinished issue on the first heartbeat.
   session: { reset: { mode: "daily", atHour: 4 } },
   agents: {
     ownership: "explicit",
-    // Модель кожного агента — об'єкт з fallbacks: рядок у OpenClaw означає «без запасної моделі»,
-    // і rate limit (429) обриває хід. Запасна модель має інший ліміт TPM, бо OpenAI рахує його
-    // окремо для кожної моделі. *_FALLBACK_MODEL порожня → лише попередження, хід без запасної.
+    // Each agent's model is an object with fallbacks: a string in OpenClaw means "no fallback model",
+    // and a rate limit (429) aborts the turn. The fallback model has a different TPM limit, because OpenAI counts it
+    // separately per model. *_FALLBACK_MODEL empty → only a warning, turn runs without a fallback.
     defaults: {
       sandbox: {
         mode: "all",
@@ -37,13 +37,13 @@
         workspaceAccess: "rw",
         docker: {
           image: "agent-team/dotnet-sandbox:10",
-          // Власна мережа (створює scripts/setup.sh): вихід в інтернет для NuGet і GitHub
-          // плюс спільний Postgres для інтеграційних тестів. Docker-сокет у пісочницю не монтуємо.
+          // Custom network (created by scripts/setup.sh): internet access for NuGet and GitHub
+          // plus a shared Postgres for integration tests. The Docker socket is not mounted into the sandbox.
           network: "agent-team",
         },
-        // Усі агенти ходять у GitHub одним ботом dopamine-dev-bot, тож хто що зробив, видно лише з підпису:
-        // AGENT_ID → префікс **[<agent>]** у коментарях і трейлер Agent: у комітах (скіли github-issue, git-commit),
-        // а в автора комітів ім'я агента в дужках. Пошта та сама, щоб коміти прив'язувались до бота.
+        // All agents use GitHub as a single bot, dopamine-dev-bot, so who did what is visible only from the signature:
+        // AGENT_ID → prefix **[<agent>]** in comments and an Agent: trailer in commits (github-issue, git-commit skills),
+        // and the commit author has the agent name in parentheses. The email is the same so commits link to the bot.
       },
       heartbeat: { every: "0m" },
     },
@@ -54,16 +54,16 @@
         model: { primary: "${LEAD_MODEL}", fallbacks: ["${LEAD_FALLBACK_MODEL}"] },
         skills: ["github-issue", "handoff", "pr-review", "pipeline-resume", "morning-briefing"],
         subagents: { allowAgents: ["ba", "architect", "dev", "qa"], delegationMode: "prefer" },
-        // Heartbeat — страхувальна сітка: раз на 10 хвилин lead перевіряє, чи не зупинився потік
-        // (скіл pipeline-resume). Хід heartbeat має повні інструменти, тож може зробити передачу,
-        // яку не вдалося зробити в ході з відповіддю агента.
+        // Heartbeat is a safety net: every 10 minutes lead checks whether the pipeline has stalled
+        // (pipeline-resume skill). The heartbeat turn has full tools, so it can make a handoff
+        // that failed in the turn with the agent's reply.
         heartbeat: { every: "10m", isolatedSession: true, activeHours: { start: "08:00", end: "23:00" } },
-        // Review пише коментарі через gh api, тож write/edit йому не потрібні.
+        // Review posts comments via gh api, so it does not need write/edit.
         sandbox: { docker: { env: { GH_TOKEN: "${GH_TOKEN_LEAD}", AGENT_ID: "lead" } } },
-        // Передачі між агентами: spawn і yield потрібні lead явно, незалежно від профілю інструментів.
+        // Handoffs between agents: lead needs spawn and yield explicitly, regardless of the tool profile.
         tools: { alsoAllow: ["sessions_spawn", "sessions_yield", "subagents"], deny: ["write", "edit", "apply_patch", "browser"] },
       },
-      // Перевіряє спеку до будь-якої роботи: PASS або QUESTIONS. Лише читає, тож write/edit не має.
+      // Validates the spec before any work: PASS or QUESTIONS. Read-only, so it has no write/edit.
       ba: {
         name: "BA",
         workspace: "${AGENT_TEAM_DIR}/workspaces/ba",
@@ -73,7 +73,7 @@
         sandbox: { docker: { env: { GH_TOKEN: "${GH_TOKEN_BA}", AGENT_ID: "ba" } } },
         tools: { deny: ["write", "edit", "apply_patch", "browser"] },
       },
-      // Створює гілку ai/<issue>-<slug> з plan.md і tasks.md (і чернеткою ADR, якщо треба); код не пише.
+      // Creates branch ai/<issue>-<slug> with plan.md and tasks.md (and a draft ADR if needed); writes no code.
       architect: {
         name: "Architect",
         workspace: "${AGENT_TEAM_DIR}/workspaces/architect",
@@ -100,7 +100,7 @@
         model: { primary: "${DEV_MODEL}", fallbacks: ["${DEV_FALLBACK_MODEL}"] },
         skills: [
           "github-issue", "handoff", "repo-conventions", "minimal-api-feature", "dotnet-quality-gate", "git-commit",
-          // адмінка web/admin (React + Vite)
+          // admin UI web/admin (React + Vite)
           "admin-ui-feature", "admin-ui-gate",
           // github.com/dotnet/skills (vendor/dotnet-skills)
           "dotnet-webapi", "optimizing-ef-core-queries", "csharp-refactoring", "run-tests", "platform-detection", "filter-syntax",
@@ -111,9 +111,9 @@
             env: {
               GH_TOKEN: "${GH_TOKEN_DEV}",
               AGENT_ID: "dev",
-              // Інтеграційні тести dopamine-shop беруть цей сервер замість Testcontainers.
+              // dopamine-shop integration tests use this server instead of Testcontainers.
               TEST_POSTGRES_CONNECTION: "Host=agent-team-postgres;Username=postgres;Password=${AGENT_PG_PASSWORD};Database=postgres",
-              // Автор комітів задано тут, а не лише в TOOLS.md: без нього git commit падає, якщо агент забув git config.
+              // Commit author is set here, not only in TOOLS.md: without it git commit fails if the agent forgot git config.
               GIT_AUTHOR_NAME: "dopamine-dev-bot (dev)",
               GIT_AUTHOR_EMAIL: "roma.sharabura+bot@gmail.com",
               GIT_COMMITTER_NAME: "dopamine-dev-bot",
@@ -123,14 +123,14 @@
         },
         tools: { deny: ["browser"] },
       },
-      // Незалежна перевірка гілки dev: тести за сценаріями спеки й контрактом, qa-report.md.
+      // Independent verification of the dev branch: tests from the spec scenarios and contract, qa-report.md.
       qa: {
         name: "QA",
         workspace: "${AGENT_TEAM_DIR}/workspaces/qa",
         model: { primary: "${QA_MODEL}", fallbacks: ["${QA_FALLBACK_MODEL}"] },
         skills: [
           "github-issue", "handoff", "repo-conventions", "spec-to-tests", "dotnet-quality-gate", "git-commit",
-          // адмінка web/admin (React + Vite)
+          // admin UI web/admin (React + Vite)
           "admin-ui-feature", "admin-ui-gate",
           // github.com/dotnet/skills (vendor/dotnet-skills)
           "run-tests", "platform-detection", "filter-syntax", "test-anti-patterns", "assertion-quality", "test-analysis-extensions", "test-gap-analysis",
@@ -142,7 +142,7 @@
               GH_TOKEN: "${GH_TOKEN_QA}",
               AGENT_ID: "qa",
               TEST_POSTGRES_CONNECTION: "Host=agent-team-postgres;Username=postgres;Password=${AGENT_PG_PASSWORD};Database=postgres",
-              // Автор комітів задано тут, а не лише в TOOLS.md: без нього git commit падає, якщо агент забув git config.
+              // Commit author is set here, not only in TOOLS.md: without it git commit fails if the agent forgot git config.
               GIT_AUTHOR_NAME: "dopamine-dev-bot (qa)",
               GIT_AUTHOR_EMAIL: "roma.sharabura+bot@gmail.com",
               GIT_COMMITTER_NAME: "dopamine-dev-bot",
@@ -154,16 +154,16 @@
       },
     },
   },
-  // Скіли лежать у workspaces/<agent>/skills (копії з skills/, scripts/sync-skills.sh):
-  // тільки скіли воркспейсу доступні агенту в пісочниці як /workspace/skills.
+  // Skills live in workspaces/<agent>/skills (copies from skills/, scripts/sync-skills.sh):
+  // only workspace skills are available to the agent in the sandbox as /workspace/skills.
   tools: {
     agentToAgent: { allow: ["lead", "ba", "architect", "dev", "qa"] },
-    // Tool Search (типово увімкнений) ховає схеми інструментів за tool_search, а пошук працює
-    // лише англійською. На SPEC-003 lead після PASS від ba не знайшов sessions_spawn і зупинився.
-    // Інструментів у нас мало, тож даємо моделі прямі схеми.
+    // Tool Search (enabled by default) hides tool schemas behind tool_search, and search works
+    // only in English. On SPEC-003, after a PASS from ba, lead did not find sessions_spawn and stopped.
+    // We have few tools, so give the model the schemas directly.
     toolSearch: false,
   },
-  // Канал Slack — окремий плагін (його пакет ставить scripts/setup.sh).
+  // The Slack channel is a separate plugin (its package is installed by scripts/setup.sh).
   plugins: {
     entries: { slack: { enabled: true } },
   },
@@ -175,7 +175,7 @@
     { agentId: "lead", match: { channel: "telegram", accountId: "*" } },
   ],
   channels: {
-    // Slack через Socket Mode: шлюз сам тримає з'єднання, публічна адреса не потрібна.
+    // Slack via Socket Mode: the gateway holds the connection itself, no public address needed.
     slack: {
       enabled: true,
       mode: "socket",
@@ -184,8 +184,8 @@
       dmPolicy: "allowlist",
       allowFrom: ["${SLACK_OWNER_ID}"],
     },
-    // Telegram вимкнено. Щоб повернути, розкоментуй блок, заповни TELEGRAM_* у .env
-    // і додай "telegram:${TELEGRAM_OWNER_ID}" у commands.ownerAllowFrom.
+    // Telegram is disabled. To bring it back, uncomment the block, fill in TELEGRAM_* in .env
+    // and add "telegram:${TELEGRAM_OWNER_ID}" to commands.ownerAllowFrom.
     // telegram: {
     //   accounts: {
     //     default: {

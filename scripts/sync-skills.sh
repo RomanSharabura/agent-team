@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Копіює спільні скіли з skills/ і скіли .NET від Microsoft з vendor/dotnet-skills/
-# у workspaces/<agent>/skills/.
-# Пісочниця бачить лише воркспейс агента (/workspace/skills), а не skills/ у корені репо.
-# Запускай після кожного git pull, що змінює skills/ (setup.sh робить це сам).
+# Copies shared skills from skills/ and the .NET skills from Microsoft from vendor/dotnet-skills/
+# into workspaces/<agent>/skills/.
+# The sandbox only sees the agent's workspace (/workspace/skills), not skills/ at the repo root.
+# Run after every git pull that changes skills/ (setup.sh does this itself).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -14,8 +14,8 @@ declare -A AGENT_SKILLS=(
   [qa]="github-issue handoff repo-conventions spec-to-tests dotnet-quality-gate git-commit admin-ui-feature admin-ui-gate"
 )
 
-# Скіли з github.com/dotnet/skills (scripts/update-dotnet-skills.sh). Наші скіли й
-# docs/conventions.md dopamine-shop мають пріоритет, див. workspaces/<agent>/AGENTS.md.
+# Skills from github.com/dotnet/skills (scripts/update-dotnet-skills.sh). Our skills and
+# dopamine-shop docs/conventions.md take precedence, see workspaces/<agent>/AGENTS.md.
 declare -A DOTNET_SKILLS=(
   [lead]=""
   [ba]=""

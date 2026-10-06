@@ -3,58 +3,60 @@ name: pipeline-resume
 description: Lead resumes a stalled Spec to PR flow from GitHub state alone - read the issue comments, work out the next step and spawn the right agent without a human.
 metadata: { "openclaw": { "requires": { "bins": ["gh", "jq"] }, "primaryEnv": "GH_TOKEN" } }
 ---
-# Відновлення зупиненого потоку
+# Resuming a stalled flow
 
-Увесь стан потоку живе в GitHub, тож будь-який твій хід може відновити роботу, навіть якщо ти не пам'ятаєш, що робив раніше. Цей скіл — про те, як з коментарів issue зрозуміти, на якому кроці все стоїть, і продовжити.
+All flow state lives in GitHub, so any of your turns can resume work, even if you do not remember what you did earlier. This skill is about how to tell from the issue comments which step things are at, and how to continue.
 
-Потік зупиняється, коли хід, у якому прийшла відповідь агента, не має `sessions_spawn` (OpenClaw лишає інструменти з моменту `sessions_spawn` лише ходу, що продовжується після `sessions_yield`). Тоді ти пишеш коментар-блокер і зупиняєшся. Наступний твій хід — heartbeat або повідомлення людини — має повні інструменти і може продовжити сам.
+The flow stalls when the turn in which an agent's reply arrives has no `sessions_spawn` (OpenClaw keeps the tools from the moment of `sessions_spawn` only for the turn that continues after `sessions_yield`). Then you write a blocker comment and stop. Your next turn — a heartbeat or a human message — has the full toolset and can continue on its own.
 
-## Коли застосовувати
-- На кожному heartbeat-ході.
-- Коли людина пише «Issue #N: продовж».
+## When to apply
+- On every heartbeat turn.
+- When the human writes "Issue #N: continue".
 
-## 1. Знайти зупинені issues
+## 1. Find stalled issues
 ```bash
 R=Roman-Sharabura/dopamine-shop
 gh issue list --repo $R --state open --label ai-in-progress --json number,updatedAt --jq 'sort_by(.updatedAt)'
 gh issue list --repo $R --state open --label ai-blocked --json number,updatedAt --jq 'sort_by(.updatedAt)'
 ```
-Порожньо в обох → нічого не пиши, заверши хід (`NO_REPLY` на heartbeat).
+Both empty → write nothing, end the turn (`NO_REPLY` on a heartbeat).
 
-## 2. Зрозуміти крок
+## 2. Work out the step
 ```bash
 gh issue view <N> --repo $R --json comments --jq '.comments[] | "\(.createdAt) \(.body)"'
 ```
-Читай знизу вгору. Останній коментар-блокер містить конверт у блоці ```json — це і є задача, яку не вдалося передати. Бери його як є.
+Read bottom-up. The last blocker comment contains an envelope in a ```json block — that is the task that could not be handed off. Take it as is.
 
-Якщо конверта немає (старий блокер або передача обірвалася без коментаря), склади конверт за скілом `handoff` з останнього, що видно в issue:
+If there is no envelope (an old blocker or the handoff broke off without a comment), build an envelope following skill `handoff` from the latest thing visible in the issue:
 
-| Останнє в issue | Наступний крок |
+| Latest in the issue | Next step |
 | --- | --- |
-| «Взяв у роботу», відповіді ba немає | `to: ba`, `step: validate`, `attempt: 1` |
-| «ba: спека PASS» | `to: architect`, `step: plan`, `attempt: 1` |
-| «architect: план у гілці `<branch>`» | `to: dev`, `step: implement`, `attempt: 1`, той самий `branch` |
-| «dev: draft PR #M, передаю qa» | `to: qa`, `step: test`, `attempt` з коментаря, `pr: M` |
-| «qa: PASS, роблю review» | review робиш сам (скіл `pr-review`), без передачі |
-| «qa: FAIL, повертаю dev (спроба K з 3)» | `to: dev`, `step: implement`, `attempt: K`, `notes` від qa без змін |
+| "Picked up", no reply from ba | `to: ba`, `step: validate`, `attempt: 1` |
+| "ba: spec PASS" | `to: architect`, `step: plan`, `attempt: 1` |
+| "architect: plan in branch `<branch>`" | `to: dev`, `step: implement`, `attempt: 1`, the same `branch` |
+| "dev: draft PR #M, handing off to qa" | `to: qa`, `step: test`, `attempt` from the comment, `pr: M` |
+| "qa: PASS, starting review" | do the review yourself (skill `pr-review`), without a handoff |
+| "qa: FAIL, returning to dev (attempt K of 3)" | `to: dev`, `step: implement`, `attempt: K`, `notes` from qa unchanged |
 
-## 3. Перевірити, що крок ще потрібен
-Не передавай наосліп: агент міг усе зробити, а загубився лише твій хід.
-Спершу інструментом `subagents` подивись, чи немає активної сесії потрібного агента. Далі — що вже є в репозиторії:
+Issues started before 2026-10-06 may carry the same status comments in Ukrainian («Взяв у роботу», «ba: спека PASS», «architect: план у гілці», «dev: draft PR #M, передаю qa», «qa: PASS, роблю review», «qa: FAIL, повертаю dev (спроба K з 3)»). Treat them exactly like their English rows above.
+
+## 3. Check that the step is still needed
+Do not hand off blindly: the agent may have done everything and only your turn got lost.
+First use the `subagents` tool to check whether there is an active session of the needed agent. Then check what is already in the repository:
 ```bash
 gh pr list --repo $R --head <branch> --state all --json number,isDraft,title
-gh api "repos/$R/contents/<spec>/qa-report.md?ref=<branch>" >/dev/null 2>&1 && echo "qa вже відпрацював"
+gh api "repos/$R/contents/<spec>/qa-report.md?ref=<branch>" >/dev/null 2>&1 && echo "qa already done"
 ```
-- Є активна сесія потрібного агента → заверши хід без змін.
-- Крок уже видно зробленим (є PR для `implement`, є `qa-report.md` для `test`) → переходь до наступного кроку, а не повторюй цей.
+- There is an active session of the needed agent → end the turn without changes.
+- The step is already visibly done (a PR exists for `implement`, `qa-report.md` exists for `test`) → move on to the next step instead of repeating this one.
 
-## 4. Продовжити
-`sessions_spawn` з конвертом, одразу за ним `sessions_yield` (скіл `handoff`), і далі звичайні кроки з AGENTS.md.
-Перед передачею: мітка `ai-in-progress` замість `ai-blocked`, якщо вона була, і коментар одним рядком, що ти продовжуєш і з якого кроку.
+## 4. Continue
+`sessions_spawn` with the envelope, immediately followed by `sessions_yield` (skill `handoff`), and then the usual steps from AGENTS.md.
+Before the handoff: label `ai-in-progress` instead of `ai-blocked`, if it was set, and a one-line comment saying that you are continuing and from which step.
 
-`sessions_spawn` недоступний і в цьому ході → нічого не пиши в issue вдруге (блокер уже є) і заверши хід. Наступний heartbeat спробує знову.
+`sessions_spawn` is unavailable in this turn too → do not write to the issue a second time (the blocker is already there) and end the turn. The next heartbeat will try again.
 
-## Ніколи
-- Не запускай двох агентів на одне issue одночасно.
-- Не починай нове issue з `ai-ready`, поки є зупинене з `ai-in-progress`: спершу доводь почате.
-- Не повторюй коментар-блокер: один блокер на одну зупинку.
+## Never
+- Do not run two agents on the same issue at the same time.
+- Do not start a new issue from `ai-ready` while there is a stalled one with `ai-in-progress`: finish what was started first.
+- Do not repeat the blocker comment: one blocker per stall.

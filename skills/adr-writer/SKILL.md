@@ -1,41 +1,41 @@
 ---
 name: adr-writer
-description: Draft an Architecture Decision Record in dopamine-shop docs/adr (Ukrainian, MADR-like format used by the repo) with status proposed, for a human to accept in the PR.
+description: Draft an Architecture Decision Record in dopamine-shop docs/adr (English, MADR-like format used by the repo) with status proposed, for a human to accept in the PR.
 metadata: { "openclaw": { "requires": { "bins": ["git"] } } }
 ---
 # ADR writer
 
-ADR потрібен, коли план вводить рішення, якого ще немає в `docs/adr` чи `docs/conventions.md`: новий модуль, новий пакет, нову наскрізну річ (декоратор, кеш, транзакції), зміну BuildingBlocks, відхилення від наявного ADR.
-Звичайний слайс за еталоном ADR не потребує.
+An ADR is needed when the plan introduces a decision that is not yet in `docs/adr` or `docs/conventions.md`: a new module, a new package, a new cross-cutting item (decorator, cache, transactions), a change to BuildingBlocks, a deviation from an existing ADR.
+A regular slice that follows the reference does not need an ADR.
 
-## Файл
-`docs/adr/NNNN-slug.md`, де `NNNN` — наступний номер після найбільшого в `docs/adr/`, `slug` — англійською в kebab-case.
-Формат — як у наявних ADR (наприклад `0004-no-mediatr.md`):
+## File
+`docs/adr/NNNN-slug.md`, where `NNNN` is the next number after the largest in `docs/adr/`, `slug` is in English, kebab-case.
+Format — as in the existing ADRs (for example `0004-no-mediatr.md`):
 ```markdown
-# NNNN. <Рішення одним реченням>
+# NNNN. <Decision in one sentence>
 
-- Статус: proposed
-- Дата: YYYY-MM-DD
-- Спека: SPEC-NNN
+- Status: proposed
+- Date: YYYY-MM-DD
+- Spec: SPEC-NNN
 
-## Контекст
-Яка вимога спеки чи обмеження змушує вирішувати. Чому наявних ADR і конвенцій не вистачає.
+## Context
+Which spec requirement or constraint forces the decision. Why the existing ADRs and conventions are not enough.
 
-## Варіанти
-- **A** — <суть>. Плюси / мінуси.
-- **B** — <суть>. Плюси / мінуси.
+## Options
+- **A** — <gist>. Pros / cons.
+- **B** — <gist>. Pros / cons.
 
-## Рішення
-Обраний варіант і чому. Що саме змінюється в коді й правилах.
+## Decision
+The chosen option and why. What exactly changes in the code and the rules.
 
-## Наслідки
-- Що стає простіше, що складніше.
-- Який архітектурний тест або пункт `docs/conventions.md` варто додати, щоб рішення трималось.
+## Consequences
+- What becomes easier, what becomes harder.
+- Which architecture test or `docs/conventions.md` item should be added to keep the decision in place.
 ```
-До 40 рядків. Мінімум два варіанти, один з них — «залишити як є», якщо це можливо.
+Up to 40 lines. At least two options, one of them "leave as is" if possible.
 
-## Правила
-- Статус завжди `proposed`. `accepted` ставить лише людина, коли мержить PR.
-- Наявні ADR не редагуй. Нове рішення замінює старе → у новому ADR рядок `- Замінює: NNNN`, старий не чіпай.
-- Окремий коміт `docs(adr): NNNN <рішення>` з тілом: яка REQ змусила і що вирішено.
-- Посилання на ADR — у `plan.md` (рядок `ADR:`) і в `notes` конверта для lead.
+## Rules
+- Status is always `proposed`. Only a human sets `accepted`, when merging the PR.
+- Do not edit existing ADRs. A new decision supersedes an old one → the new ADR has a line `- Supersedes: NNNN`; do not touch the old one.
+- Separate commit `docs(adr): NNNN <decision>` with a body: which REQ forced it and what was decided.
+- Link to the ADR — in `plan.md` (line `ADR:`) and in the `notes` of the envelope for lead.

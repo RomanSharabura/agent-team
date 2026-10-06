@@ -3,5 +3,5 @@
 workspaces/*/memory/
 workspaces/*/repos/
 workspaces/*/skills/
-# знімок сторожа бюджету (scripts/budget-guard.mjs)
+# budget guard snapshot (scripts/budget-guard.mjs)
 workspaces/*/state/

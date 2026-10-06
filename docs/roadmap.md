@@ -1,25 +1,25 @@
 # Roadmap
 
-Збираємо по зростанню: робоча версія з двома агентами краща за шість, що не доходять до PR.
+We build incrementally: a working version with two agents beats six that never reach a PR.
 
-| Етап | Агенти і скіли | Результат |
+| Stage | Agents and skills | Result |
 | --- | --- | --- |
-| 1 ✅ | lead + dev; github-issue, handoff, repo-conventions, minimal-api-feature, dotnet-quality-gate, git-commit; Docker-пісочниця | Issue `ai-ready` → draft PR з кодом і тестами для SPEC-001 |
-| 2 ✅ | + qa (spec-to-tests з перевіркою контракту openapi.yaml), петля qa → dev (макс. 2); code review від lead (pr-review) | Тести пише незалежний агент, qa-report.md; PR приходить людині вже з review |
-| 3 ✅ | + ba (spec-validate), architect (spec-to-plan, adr-writer); spec-trace і pr-create не окремі (матрицю REQ веде qa, PR відкриває dev, review робить lead) | Повний потік Spec → PR: спека перевірена до роботи, план з REQ-ID у гілці до коду |
-| 4 ◐ | Черга без ручного старту ✅ (heartbeat + `pipeline-resume`, ціль спринту через milestone); бюджети ✅ (`budget.json`, сторож `budget-guard`, пауза heartbeat); ранковий брифінг lead ✅. Далі: Stryker; memory MCP на C# | Команда працює за чергою, вартість видно |
-| 5 ◐ | Адмінка ✅: Node 24 у пісочниці, скіли `admin-ui-feature` і `admin-ui-gate`, UI-розділи в `spec-validate`, `spec-to-plan`, `spec-to-tests`, `pr-review`. Далі: Chrome-розширення MV3 | Адмінка (перша спека — SPEC-003) і web-клієнт через той самий потік |
+| 1 ✅ | lead + dev; github-issue, handoff, repo-conventions, minimal-api-feature, dotnet-quality-gate, git-commit; Docker sandbox | Issue `ai-ready` → draft PR with code and tests for SPEC-001 |
+| 2 ✅ | + qa (spec-to-tests with openapi.yaml contract check), qa → dev loop (max 2); code review by lead (pr-review) | Tests are written by an independent agent, qa-report.md; the PR reaches the human already reviewed |
+| 3 ✅ | + ba (spec-validate), architect (spec-to-plan, adr-writer); spec-trace and pr-create are not separate (qa keeps the REQ matrix, dev opens the PR, lead reviews) | Full Spec → PR flow: spec validated before work, plan with REQ-IDs in the branch before code |
+| 4 ◐ | Queue without manual start ✅ (heartbeat + `pipeline-resume`, sprint goal via milestone); budgets ✅ (`budget.json`, `budget-guard`, heartbeat pause); lead morning briefing ✅. Next: Stryker; memory MCP in C# | The team works from the queue, cost is visible |
+| 5 ◐ | Admin UI ✅: Node 24 in the sandbox, skills `admin-ui-feature` and `admin-ui-gate`, UI sections in `spec-validate`, `spec-to-plan`, `spec-to-tests`, `pr-review`. Next: MV3 Chrome extension | Admin UI (first spec: SPEC-003) and web client through the same flow |
 
-## Відмінності від початкового дизайну
-- GitHub замість Azure DevOps: issues і мітки замість work items і тегів, `gh` замість ADO MCP.
-- Конфіг OpenClaw 2026.9.8 використовує `agents.entries` (а не `agents.list`) і `subagents.allowAgents` для делегування.
-- dopamine-shop — модульний моноліт (Clean Architecture + vertical slices + DDD) без MediatR; правила перевіряють архітектурні тести, тож агентам не треба тримати їх у промпті.
-- На етапі 1 dev сам пише plan.md, tasks.md, тести і draft PR. З етапу 2 qa-report.md і тести за сценаріями й контрактом пише qa; з етапу 3 plan.md і tasks.md пише architect у гілці до dev, а dev лише ставить галочки в tasks.md.
-- Окремого скіла `xunit-tests` немає: unit-тести на домен і валідатори пише dev за `minimal-api-feature`, а qa перевіряє поведінку через HTTP і контракт (`spec-to-tests`). Stryker перенесено на етап 4.
-- Окремого агента reviewer немає: review робить lead за скілом `pr-review`. Lead і так не пише код, тож він незалежний від dev, а зайвий агент — це ще один токен, модель і передача. Якщо review lead виявиться поверховим, винесемо скіл в окремого агента з сильнішою моделлю без змін у петлі.
-- Review завжди йде як `COMMENT`: агенти пишуть від одного бота, а GitHub не дає апрувити чи «request changes» власний PR. Апрув і мерж — за людиною.
-- qa пушить у ту саму гілку `ai/*`, що й dev, і не змінює `src/`. Червоні тести qa лишаються в гілці як доказ знахідки, поки dev не виправить код.
-- ba не пише в issue сам: його вердикт і питання публікує lead (коментар «Spec validation» і мітка `ai-needs-input`). Так ba досить токена на читання, а всі зміни стану issue робить один агент.
-- `clean-arch-plan` не окремий скіл: мапу шарів дають `docs/conventions.md`, ADR і архітектурні тести dopamine-shop, а architect читає їх через `repo-conventions`. Чернетки ADR architect додає зі статусом `proposed` у ту саму гілку; приймає їх людина разом з PR.
-- Paperclip замінено нативним обліком OpenClaw (`openclaw gateway usage-cost`) і сторожем бюджету: Paperclip бачить і обмежує лише запуски, які стартує сам, а ланцюжок агентів у нас іде всередині OpenClaw. «Компанію» з ціллю спринту замінює milestone у GitHub, дашборд — Control UI (Usage) і ранковий брифінг. Бюджет діє з точністю до кроку агента: сторож не перериває крок, що вже йде.
-- Петлі qa і review повертають задачу лише dev: architect після dev не викликається. Якщо план виявився хибним, dev повертає `BLOCKED`, і рішення за людиною.
+## Differences from the original design
+- GitHub instead of Azure DevOps: issues and labels instead of work items and tags, `gh` instead of ADO MCP.
+- The OpenClaw 2026.9.8 config uses `agents.entries` (not `agents.list`) and `subagents.allowAgents` for delegation.
+- dopamine-shop is a modular monolith (Clean Architecture + vertical slices + DDD) without MediatR; the rules are enforced by architecture tests, so agents don't need to keep them in the prompt.
+- In stage 1 dev writes plan.md, tasks.md, tests, and the draft PR itself. From stage 2 qa writes qa-report.md and the scenario and contract tests; from stage 3 architect writes plan.md and tasks.md in the branch before dev, and dev only checks off items in tasks.md.
+- There is no separate `xunit-tests` skill: dev writes unit tests for the domain and validators per `minimal-api-feature`, and qa checks behavior via HTTP and the contract (`spec-to-tests`). Stryker moved to stage 4.
+- There is no separate reviewer agent: lead does the review using the `pr-review` skill. Lead doesn't write code anyway, so it is independent of dev, and an extra agent means one more token, model, and handoff. If lead's review turns out superficial, we'll move the skill into a separate agent with a stronger model without changing the loop.
+- Review is always posted as `COMMENT`: agents write as one bot, and GitHub doesn't allow approving or "request changes" on your own PR. Approve and merge are up to the human.
+- qa pushes to the same `ai/*` branch as dev and doesn't change `src/`. qa's red tests stay in the branch as evidence of the finding until dev fixes the code.
+- ba doesn't post to the issue itself: lead publishes its verdict and questions (a "Spec validation" comment and the `ai-needs-input` label). This way ba needs only a read token, and all issue state changes are made by one agent.
+- `clean-arch-plan` is not a separate skill: the layer map comes from dopamine-shop `docs/conventions.md`, ADRs, and architecture tests, and architect reads them via `repo-conventions`. architect adds draft ADRs with status `proposed` to the same branch; the human accepts them together with the PR.
+- Paperclip replaced by OpenClaw's native tracking (`openclaw gateway usage-cost`) and the budget guard: Paperclip sees and limits only runs it starts itself, while our agent chain runs inside OpenClaw. The "company" with a sprint goal is replaced by a GitHub milestone, the dashboard by the Control UI (Usage) and the morning briefing. The budget is enforced to the granularity of an agent step: the guard does not interrupt a step already running.
+- The qa and review loops return the task only to dev: architect is not called after dev. If the plan turns out wrong, dev returns `BLOCKED`, and the decision is up to the human.

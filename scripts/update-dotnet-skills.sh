@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Оновлює скіли .NET від Microsoft (github.com/dotnet/skills, MIT) у vendor/dotnet-skills/.
-# Беремо лише скіли, корисні dopamine-shop (ASP.NET Core Minimal API, EF Core, xUnit).
-# Використання: ./scripts/update-dotnet-skills.sh [commit|branch]   (типово main)
-# Після оновлення: переглянь diff, закоміть і запусти ./scripts/sync-skills.sh.
+# Updates the .NET skills from Microsoft (github.com/dotnet/skills, MIT) in vendor/dotnet-skills/.
+# Takes only the skills useful to dopamine-shop (ASP.NET Core Minimal API, EF Core, xUnit).
+# Usage: ./scripts/update-dotnet-skills.sh [commit|branch]   (default: main)
+# After updating: review the diff, commit, and run ./scripts/sync-skills.sh.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 REF="${1:-main}"
-# <плагін>/<скіл> у репо dotnet/skills
+# <plugin>/<skill> in the dotnet/skills repo
 SKILLS=(
   dotnet/csharp-refactoring
   dotnet-aspnetcore/dotnet-webapi
@@ -36,16 +36,16 @@ done
 cp "$tmp/src/LICENSE" "$dest/LICENSE"
 
 {
-  echo "# Скіли .NET від Microsoft"
+  echo "# .NET skills from Microsoft"
   echo
-  echo "Копія скілів з https://github.com/dotnet/skills (MIT, див. LICENSE), без змін."
-  echo "Оновлення: \`./scripts/update-dotnet-skills.sh [commit]\`, потім \`./scripts/sync-skills.sh\`."
+  echo "Unmodified copy of skills from https://github.com/dotnet/skills (MIT, see LICENSE)."
+  echo "Update: \`./scripts/update-dotnet-skills.sh [commit]\`, then \`./scripts/sync-skills.sh\`."
   echo
-  echo "Коміт: \`$commit\`"
+  echo "Commit: \`$commit\`"
   echo
-  echo "| Скіл | Плагін |"
+  echo "| Skill | Plugin |"
   echo "|---|---|"
   for entry in "${SKILLS[@]}"; do echo "| \`${entry##*/}\` | \`${entry%%/*}\` |"; done
 } > "$dest/SOURCE.md"
 
-echo "dotnet/skills@$commit → $dest (${#SKILLS[@]} скілів)"
+echo "dotnet/skills@$commit → $dest (${#SKILLS[@]} skills)"
