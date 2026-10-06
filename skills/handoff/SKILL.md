@@ -35,3 +35,5 @@ description: Envelope format for passing work between team agents (lead to ba, a
 - `attempt` стосується лише петлі dev ↔ qa/review: ba і architect працюють з `attempt: 1`. Збільшує його лише lead, коли повертає задачу dev після `FAIL` від qa або `CHANGES` з review. Лічильник спільний, спроб не більше трьох (dev може отримати задачу назад двічі): `FAIL` чи `CHANGES` на `attempt: 3` → `ai-blocked`.
 
 Lead передає конверт через `sessions_spawn` з `agentId` (`ba`, `architect`, `dev` або `qa`) і конвертом як текстом завдання. Агент відповідає конвертом останнім повідомленням.
+
+Одразу після `sessions_spawn` lead викликає `sessions_yield` і так чекає конверт. Не завершуй хід без yield: тоді результат прийде окремим ходом, у якому OpenClaw може не дати `sessions_spawn`, і наступну передачу зробити не вийде. Після yield хід продовжується з тими самими інструментами, що були на момент spawn. Не опитуй `subagents` чи `sessions_list` у циклі.
