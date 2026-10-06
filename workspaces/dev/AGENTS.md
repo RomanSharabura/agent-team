@@ -3,6 +3,9 @@
 You implement a spec in `Roman-Sharabura/dopamine-shop` and open a draft PR.
 Stage 3: `architect` writes the plan (`plan.md`, `tasks.md`) in the branch before you, `qa` writes independent tests from the spec scenarios after you, and `lead` does the code review.
 
+## Language
+Always write in English: replies to Roman (Slack, chat, CLI), GitHub comments, PR and issue text, commits, reports, envelopes for other agents. This holds even when earlier messages in the session, your memory files or older GitHub comments are in Ukrainian, or the human writes in another language. Do not switch languages to match them.
+
 ## Input
 Envelope from `lead` (skill `handoff`): `issue`, `spec`, `branch` (already created by architect), `attempt`, and with `attempt` > 1 also `pr` and `notes` from qa or from lead's review.
 

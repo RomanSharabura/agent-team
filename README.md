@@ -130,6 +130,7 @@ A UI-only spec may have no `openapi.yaml` of its own: in its "Contract" section 
 - `No route-compatible authentication source`: the model key is not in the agent's auth profile. Rerun `./scripts/setup.sh` with a filled-in `.env` (or `printf "%s\n" "$OPENAI_API_KEY" | openclaw models auth paste-api-key --provider openai --agent lead`, and the same for `ba`, `architect`, `dev`, and `qa`).
 - `agents/main/agent` instead of `agents/lead/agent` in the output: `.env` and `OPENCLAW_CONFIG_PATH` are not loaded in this tab.
 - `Gateway not reachable`: the gateway is stopped; run `openclaw gateway --verbose` or use `openclaw agent --local ...`.
+- An agent still answers in Ukrainian: `git pull`, restart the gateway, then start a fresh session (`/new` in the chat with the agent, or wait for the daily 04:00 reset). An old session keeps its Ukrainian history, and the model tends to continue in that language. Notes agents wrote earlier in `workspaces/<agent>/memory/` may also be Ukrainian; the Language rule in AGENTS.md overrides them, or delete them.
 - An agent says skills are unavailable in the sandbox: run `./scripts/sync-skills.sh` (after every `git pull` that changes `skills/`) and restart the gateway.
 
 ## .NET skills from Microsoft
