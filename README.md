@@ -2,7 +2,7 @@
 
 Команда агентів [OpenClaw](https://docs.openclaw.ai), яка бере специфікацію з [dopamine-shop](https://github.com/Roman-Sharabura/dopamine-shop) і віддає Pull Request. Людина робить дві речі: пише спеку і мержить PR.
 
-**Етап 3 (зараз):** `lead` + `ba` + `architect` + `dev` + `qa`. Lead бере issue з міткою `ai-ready` і спершу віддає спеку ba: той перевіряє EARS, сценарії й узгодженість з `openapi.yaml` і повертає PASS або питання (тоді issue отримує `ai-needs-input` з коментарем «Spec validation»). Після PASS architect створює гілку `ai/<issue>-<slug>` з `plan.md` і `tasks.md` (кожен крок з REQ-ID), а для нових архітектурних рішень — чернетку ADR. dev у Docker-пісочниці виконує `tasks.md`, пише код і тести та відкриває draft PR. Потім qa незалежно пише тести за сценаріями спеки й контрактом `openapi.yaml` і веде `qa-report.md`. Після PASS lead робить code review: коментарі до рядків у PR, 🔴 blocking повертає dev, 🟡 nit лишає тобі. Якщо qa чи review знайшли проблему, lead повертає задачу dev, разом не більше двох разів. Чистий PR lead переводить з draft у ready і додає тебе в рев'юери; мержиш ти. План наступних етапів — у [docs/roadmap.md](docs/roadmap.md).
+**Етап 3 (зараз):** `lead` + `ba` + `architect` + `dev` + `qa`. Lead бере issue з міткою `ai-ready` і спершу віддає спеку ba: той перевіряє EARS, сценарії й узгодженість з `openapi.yaml` і повертає PASS або питання (тоді issue отримує `ai-needs-input` з коментарем «Spec validation»). Після PASS architect створює гілку `ai/<issue>-<slug>` з `plan.md` і `tasks.md` (кожен крок з REQ-ID), а для нових архітектурних рішень — чернетку ADR. dev у Docker-пісочниці виконує `tasks.md`, пише код і тести та відкриває draft PR. Потім qa незалежно пише тести за сценаріями спеки й контрактом `openapi.yaml` і веде `qa-report.md`. Після PASS lead робить code review: коментарі до рядків у PR, 🔴 blocking повертає dev, 🟡 nit лишає тобі. Якщо qa чи review знайшли проблему, lead повертає задачу dev, разом не більше двох разів. Чистий PR lead переводить з draft у ready і додає тебе в рев'юери; мержиш ти. З етапу 4 команда сама бере задачі з черги, тримається бюджету і щоранку звітує в Slack (див. [Етап 4](#етап-4-черга-без-ручного-старту-бюджети-брифінг)). План наступних етапів — у [docs/roadmap.md](docs/roadmap.md).
 
 ```text
 openclaw.json5          конфіг (OPENCLAW_CONFIG_PATH вказує сюди)
@@ -15,7 +15,10 @@ skills/                 спільні скіли; scripts/sync-skills.sh коп
 vendor/dotnet-skills/   скіли .NET від Microsoft (github.com/dotnet/skills), sync-skills.sh теж їх копіює
 CHANGELOG.md            історія змін; кожен PR додає рядок (перевіряє CI)
 sandbox/Dockerfile      .NET 10 SDK + git + gh + psql для пісочниці
+budget.json             ліміти витрат команди й агентів (етап 4)
 scripts/setup.sh        одноразове налаштування
+scripts/automations.sh  розклад: сторож бюджету і ранковий брифінг (етап 4)
+scripts/budget-guard.mjs облік витрат і пауза команди за budget.json
 ```
 
 ## Що потрібно на машині
@@ -74,6 +77,24 @@ Lead слухає особисті повідомлення в Slack через 
 - **п'ять акаунтів-ботів** (`dopamine-lead-bot`, `dopamine-dev-bot`…): кожному свою пошту, запрошення в організацію і classic PAT `repo` у свою змінну `GH_TOKEN_<AGENT>`; у `GIT_AUTHOR_EMAIL` — пошта відповідного бота. Нічого в коді, крім пошти авторів, міняти не треба. Мінус — п'ять акаунтів і токенів, а машинні акаунти за правилами GitHub має вести людина;
 - **GitHub App на кожного агента** (`dopamine-lead[bot]`…): короткоживучі токени замість PAT і точні права на один репозиторій. Потрібен скрипт, що з приватного ключа App генерує installation token перед запуском агента (токен живе годину), тож це окремий етап.
 
+## Етап 4: черга без ручного старту, бюджети, брифінг
+Команда сама бере задачі з черги: heartbeat lead раз на 10 хвилин (08:00–23:00) доводить почате (`pipeline-resume`) і бере наступне `ai-ready`. Зверху — два завдання в планувальнику OpenClaw:
+- **Budget guard** (кожні 10 хв, без виклику моделі): `scripts/budget-guard.mjs` бере витрати кожного агента з `openclaw gateway usage-cost`, пише знімок у `workspaces/lead/state/budget.json` і порівнює з лімітами з [`budget.json`](budget.json). Понад 80% — попередження в Slack. Понад 100% — `openclaw system heartbeat disable` і повідомлення: агент дограє поточний крок, а lead перед наступною передачею зупиняється з `ai-blocked` і конвертом у коментарі. Наступної доби (UTC), коли витрати в нормі, сторож сам вмикає heartbeat, і потік продовжується з того ж кроку.
+- **Morning briefing** (пн–пт о 09:00 за Києвом): lead за скілом `morning-briefing` пише в Slack, що зроблено, що в роботі, що чекає на тебе, прогрес цілі спринту і витрати (вчора, з початку місяця, ≈ $ на PR).
+
+**Ціль спринту** — відкритий milestone у dopamine-shop з найближчим `due_on` (опис milestone — сама ціль). Lead спершу бере `ai-ready` з цього milestone, а брифінг показує його прогрес. Milestone необов'язковий: без нього черга йде від найстарішого.
+
+Увімкнути:
+1. `git pull && ./scripts/sync-skills.sh`, перезапусти шлюз.
+2. Перевір ліміти в `budget.json` (долари — оцінка OpenClaw за цінами моделей, `tokens` — страховка, якщо ціни моделі OpenClaw не знає). Зміни в `budget.json` діють з наступного запуску сторожа, перезапуск не потрібен.
+3. При запущеному шлюзі: `./scripts/automations.sh`. Повторний запуск оновлює ті самі завдання. Інший час брифінгу — `BRIEFING_CRON` і `BRIEFING_TZ` у `.env`.
+4. Перевір: `node scripts/budget-guard.mjs --report` (таблиця витрат, нічого не змінює), `openclaw automations list --agent lead`, брифінг одразу — `openclaw automations run <id Morning briefing>`.
+5. Страховка понад сторожа: ліміт витрат проєкту в кабінеті OpenAI (Settings → Limits). Сторож бачить витрати із запізненням до 10 хвилин і не перериває крок, що вже йде.
+
+Витрати також видно в Control UI (Usage) і командами `openclaw gateway usage-cost --all-agents`, `openclaw status --usage`.
+
+Чому не Paperclip: Paperclip підключається до OpenClaw 2026.9.8 (адаптер `openclaw_gateway`, протокол v4) і рахує витрати лише тих запусків, які стартує сам. У нас увесь ланцюжок ba → architect → dev → qa запускає lead усередині OpenClaw (`sessions_spawn` і heartbeat), тож бюджети Paperclip не зупинили б dev чи qa, а для обліку довелося б перенести оркестрацію з OpenClaw у Paperclip і тримати ще один сервер з базою. Нативний облік OpenClaw бачить кожного агента, включно з субагентами.
+
 ## Адмінка web/admin (етап 5)
 1. `git pull && ./scripts/sync-skills.sh`
 2. Перебудуй образ пісочниці (у ньому з'явився Node 24): `docker build -t agent-team/dotnet-sandbox:10 sandbox/`
@@ -113,7 +134,7 @@ dev і qa мають частину скілів з [dotnet/skills](https://gith
 ## Як дати команді нову задачу
 1. Додай `specs/<NNN-slug>/spec.md` і `openapi.yaml` у `main` dopamine-shop зі `status: ready` (для спеки лише на адмінку `openapi.yaml` не потрібен, див. «Адмінка web/admin»).
 2. Створи issue з рядком `Spec: specs/<NNN-slug>` в описі і міткою `ai-ready`.
-3. Lead підхопить його на heartbeat (кожні 30 хв, 08:00–23:00) або за командою в Slack.
+3. Lead підхопить його на heartbeat (кожні 10 хв, 08:00–23:00) або за командою в Slack. Issues з milestone цілі спринту йдуть першими (див. «Етап 4»).
 
 ## Мітки (машина станів)
 `ai-ready` → `ai-in-progress` (ba → architect → dev → qa → review lead) → `ai-review` → approve і merge людиною. Побічні: `ai-needs-input`, `ai-blocked`.
