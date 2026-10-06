@@ -11,7 +11,8 @@ command -v docker >/dev/null || { echo "Немає docker (Rancher Desktop: ув
 command -v openclaw >/dev/null || npm i -g openclaw@2026.9.8
 
 for var in AGENT_TEAM_DIR LEAD_MODEL BA_MODEL ARCHITECT_MODEL DEV_MODEL QA_MODEL \
-  GH_TOKEN_LEAD GH_TOKEN_BA GH_TOKEN_ARCHITECT GH_TOKEN_DEV GH_TOKEN_QA; do
+  GH_TOKEN_LEAD GH_TOKEN_BA GH_TOKEN_ARCHITECT GH_TOKEN_DEV GH_TOKEN_QA \
+  SLACK_APP_TOKEN SLACK_BOT_TOKEN SLACK_OWNER_ID; do
   [[ -n "${!var:-}" ]] || { echo "У .env порожня змінна $var (див. .env.example)"; exit 1; }
 done
 
@@ -30,6 +31,15 @@ echo "== Мітки в dopamine-shop"
 
 echo "== Скіли у воркспейси агентів"
 ./scripts/sync-skills.sh
+
+echo "== Плагін Slack"
+# plugins install теж переписує конфіг, тому ставимо на тимчасову копію; plugins.entries.slack уже в openclaw.json5.
+if ! OPENCLAW_CONFIG_PATH="$PWD/openclaw.json5" openclaw plugins list --json 2>/dev/null | grep -q '"id": *"slack"'; then
+  tmpdir="$(mktemp -d)"
+  cp openclaw.json5 "$tmpdir/openclaw.json5"
+  OPENCLAW_CONFIG_PATH="$tmpdir/openclaw.json5" openclaw plugins install @openclaw/slack@2026.9.8
+  rm -rf "$tmpdir"
+fi
 
 echo "== Ключі моделей в auth-профілі агентів"
 # OpenClaw бере ключ для агентів не зі змінної оточення, а з auth-профілю кожного агента.
@@ -60,5 +70,5 @@ cat <<MSG
 
 Далі: openclaw gateway --verbose, а в іншому терміналі
   openclaw agent --agent lead --message "перевір чергу"
-(або напиши боту в Telegram).
+(або напиши боту в Slack в особисті).
 MSG
