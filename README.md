@@ -51,6 +51,13 @@ openclaw logs --follow                                # що відбуваєт�
 ```
 Або напиши боту в Telegram «перевір чергу». Lead візьме issue [#1](https://github.com/Roman-Sharabura/dopamine-shop/issues/1) (SPEC-001), поставить `ai-in-progress` і передасть його ba. Результат: коментар ba в issue, гілка `ai/001-...` з `plan.md` і `tasks.md` від architect, PR з тестами, `qa-report.md` від qa, review від lead і мітка `ai-review`.
 
+## Адмінка web/admin (етап 5)
+1. `git pull && ./scripts/sync-skills.sh`
+2. Перебудуй образ пісочниці (у ньому з'явився Node 24): `docker build -t agent-team/dotnet-sandbox:10 sandbox/`
+3. Пересоздай пісочниці, щоб вони взяли новий образ: `openclaw sandbox recreate --agent dev`, те саме для `qa` і `architect`.
+4. Перевір: `docker run --rm agent-team/dotnet-sandbox:10 node --version` показує `v24.x`. Перезапусти шлюз.
+Спека лише для UI може не мати свого `openapi.yaml`: у розділі «Контракт» вона посилається на наявний (зразок — `specs/003-admin-ui-edit-user`).
+
 ## Перехід на етап 3 (ba і architect)
 1. `git pull && ./scripts/sync-skills.sh`
 2. У `.env` додай `BA_MODEL`, `ARCHITECT_MODEL`, `GH_TOKEN_BA` і `GH_TOKEN_ARCHITECT` (див. `.env.example`). Токен бота з `GH_TOKEN_DEV` підходить для обох.
@@ -81,7 +88,7 @@ dev і qa мають частину скілів з [dotnet/skills](https://gith
 - Додати скіл: допиши `<плагін>/<скіл>` у `scripts/update-dotnet-skills.sh`, назву в `DOTNET_SKILLS` і в `skills` агента.
 
 ## Як дати команді нову задачу
-1. Додай `specs/<NNN-slug>/spec.md` і `openapi.yaml` у `main` dopamine-shop зі `status: ready`.
+1. Додай `specs/<NNN-slug>/spec.md` і `openapi.yaml` у `main` dopamine-shop зі `status: ready` (для спеки лише на адмінку `openapi.yaml` не потрібен, див. «Адмінка web/admin»).
 2. Створи issue з рядком `Spec: specs/<NNN-slug>` в описі і міткою `ai-ready`.
 3. Lead підхопить його на heartbeat (кожні 30 хв, 08:00–23:00) або за командою в Telegram.
 

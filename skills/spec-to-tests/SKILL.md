@@ -47,6 +47,15 @@ root.GetProperty("page").ValueKind.Should().Be(JsonValueKind.Number);
 REQ-004 — status=blocked повертає лише заблокованих — повертає всіх (3 замість 1) — REQ_004_filter_returns_only_blocked_users
 ```
 
+## UI-спеки (`web/admin`)
+Спека про адмінку → тести сторінки на Vitest + Testing Library замість HTTP-тестів (форму тестів і хелпери див. скіл `admin-ui-feature`, розділ «Тести»).
+- Файл `src/features/<module>/<feature>/<Name>.qa.test.tsx` поруч з тестами dev: їхні файли не переписуй.
+- `describe('<Name> — qa (SPEC-NNN)')`, кожен `it` починається з REQ-ID і назви сценарію: `it('REQ-004 порожнє ім’я', ...)`.
+- `Given` → `mockApi` з даними, `When` → дії `userEvent`, `Then` → усе, що каже сценарій: точний текст, роль (`alert`, `status`), стан кнопки, кількість запитів, метод і тіло (`await request.clone().json()`).
+- Контракт замість пункту 2: тіло запиту має лише поля зі схеми `requestBody` у `openapi.yaml`, з тими самими межами; UI обробляє кожен код з `responses` (тест на кожен).
+- Знахідка має той самий формат, тест — назва `it`.
+- Gate: `admin-ui-gate` (і `dotnet-quality-gate`, якщо diff зачіпає .NET). У звіті розділ «Контракт» — запити UI до API, «Quality gate» — `npm run check`.
+
 ## 5. qa-report.md
 У папці спеки. Якщо файл уже є (його міг лишити dev), перепиши повністю.
 

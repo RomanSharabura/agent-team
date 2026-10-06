@@ -8,7 +8,7 @@
 | 2 ✅ | + qa (spec-to-tests з перевіркою контракту openapi.yaml), петля qa → dev (макс. 2); code review від lead (pr-review) | Тести пише незалежний агент, qa-report.md; PR приходить людині вже з review |
 | 3 ✅ | + ba (spec-validate), architect (spec-to-plan, adr-writer); spec-trace і pr-create не окремі (матрицю REQ веде qa, PR відкриває dev, review робить lead) | Повний потік Spec → PR: спека перевірена до роботи, план з REQ-ID у гілці до коду |
 | 4 | Paperclip: бюджет на агента, $ на PR; Stryker; memory MCP на C# | Команда працює за чергою, вартість видно |
-| 5 | Скіли для фронтенду (React + TS, Chrome-розширення MV3) | Адмінка і web-клієнт через той самий потік |
+| 5 ◐ | Адмінка ✅: Node 24 у пісочниці, скіли `admin-ui-feature` і `admin-ui-gate`, UI-розділи в `spec-validate`, `spec-to-plan`, `spec-to-tests`, `pr-review`. Далі: Chrome-розширення MV3 | Адмінка (перша спека — SPEC-003) і web-клієнт через той самий потік |
 
 ## Відмінності від початкового дизайну
 - GitHub замість Azure DevOps: issues і мітки замість work items і тегів, `gh` замість ADO MCP.

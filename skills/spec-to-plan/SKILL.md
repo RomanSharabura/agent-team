@@ -14,6 +14,7 @@ metadata: { "openclaw": { "requires": { "bins": ["git"] } } }
 - **Домен.** Нова поведінка → метод агрегату з інваріантами і `DomainException`. Яку наявну перевірку перевикористати (наприклад, спільна з `Register`).
 - **Дані.** Нові таблиці чи колонки → міграція (назва), індекси під фільтри й сортування зі спеки. Без змін схеми → «Міграція: ні».
 - **Контракт.** Маршрут, параметри, тіло, коди відповідей — з `openapi.yaml` без змін. Якщо зручніший контракт хочеться — це питання до Roman (`QUESTIONS`), а не правка.
+- **UI** (`web/admin`). Спека про адмінку → слайс `src/features/<module>/<feature>/` (скіл `admin-ui-feature`), на якій сторінці він з'являється, які query-ключі оновити після зміни. Спека лише для UI → шари бекенду в таблиці «без змін».
 - **Ризики.** Що може піти не так: трансляція EF (value objects у `Where`), регістр і `LIKE` у Postgres, часові пояси, конкурентний запис, розрізнення `null` і відсутнього поля.
 
 ## plan.md
@@ -28,6 +29,7 @@ metadata: { "openclaw": { "requires": { "bins": ["git"] } } }
 | Application | `Features/<F>/<F>Command.cs`, `<F>Handler.cs`, `<F>Validator.cs` | ... |
 | Infrastructure | ... | ... або «без змін» |
 | Presentation | `Features/<F>/<F>Endpoint.cs` | `<METHOD> <route>`, operation `<F>` |
+| UI | `web/admin/src/features/<module>/<feature>/...` | ... або «без змін» |
 | Tests | шляхи unit-, handler- і HTTP-тестів | що покривають |
 
 - Команда/запит: `<F>Command(...) : ICommand<T>`; як результат мапиться на коди відповідей.
@@ -36,7 +38,7 @@ metadata: { "openclaw": { "requires": { "bins": ["git"] } } }
 - ADR: немає / `docs/adr/NNNN-slug.md` (proposed).
 - Ризики: ... або «немає».
 ```
-Шляхи — відносно `src/Modules/<M>/DopamineShop.Modules.<M>.<Шар>/` і `tests/`, як у зразках. До 40 рядків.
+Шляхи — відносно `src/Modules/<M>/DopamineShop.Modules.<M>.<Шар>/` і `tests/`, як у зразках; для UI — від кореня репо. До 40 рядків.
 
 ## tasks.md
 ```markdown
@@ -46,7 +48,7 @@ metadata: { "openclaw": { "requires": { "bins": ["git"] } } }
 - [ ] 2. ...
 ```
 - 3–8 кроків, у порядку виконання: домен → application → presentation → міграція (якщо є).
-- Кожен крок має REQ-ID і критерій готовності, який dev перевіряє командою або тестом («unit-тести валідатора зелені», «`dotnet ef migrations list` показує `<Name>`»).
+- Кожен крок має REQ-ID і критерій готовності, який dev перевіряє командою або тестом («unit-тести валідатора зелені», «`dotnet ef migrations list` показує `<Name>`», для UI — «тести `REQ-00x` у `<Name>.test.tsx` зелені, `npm run check` зелений»).
 - Один крок — один коміт dev, тож крок має бути завершеним і зеленим сам по собі.
 - Кожна REQ зі `spec.md` — хоча б в одному кроці. Перевір перед комітом:
 ```bash
