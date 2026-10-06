@@ -25,7 +25,7 @@ Let `M` be the module (for example `Users`), `F` the feature (for example `ListU
 4. **Registration** is automatic (handlers, validators, endpoints). Do not touch `Program.cs`.
 5. **Infrastructure**: only if a new table or EF config is needed. Then
    `dotnet ef migrations add <Name> -p src/Modules/M/DopamineShop.Modules.M.Infrastructure -s src/Bootstrapper/DopamineShop.Api -c MDbContext -o Persistence/Migrations`.
-6. Logging: Serilog via `ILogger<T>`, structured properties, no string interpolation.
+6. Logging: Serilog via `ILogger<T>`, structured properties, no string interpolation. Telemetry goes through OpenTelemetry in `src/Aspire/DopamineShop.ServiceDefaults` (logs and traces to Seq and the Aspire dashboard, ADR 0008): do not add Serilog sinks or exporters, and register any new `ActivitySource` or `Meter` there.
 7. Do not add NuGet packages, create modules or change BuildingBlocks without an explicit item in the plan. MediatR is forbidden.
 8. Run `dotnet-quality-gate`. Red → fix, do not skip.
 
