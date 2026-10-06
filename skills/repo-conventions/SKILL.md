@@ -11,4 +11,4 @@ description: Read dopamine-shop conventions, ADRs, architecture tests and the re
 4. Проглянь `tests/DopamineShop.ArchitectureTests`: там правила шарів, модулів, слайсів і DDD у вигляді коду. Вони запускаються з `dotnet test` і не послаблюються.
 5. Знайшов у репо закономірність, якої немає в conventions.md → запиши її в свій `MEMORY.md` і згадай у PR в розділі «Що змінилось», щоб людина вирішила, чи додавати її в conventions.
 
-Не змінюй `docs/conventions.md` і `docs/adr/` сам: це робить людина (пізніше architect через PR).
+Не змінюй `docs/conventions.md` і наявні `docs/adr/` сам: це робить людина. architect може додати нову чернетку ADR зі статусом `proposed` (скіл `adr-writer`), приймає її людина при мержі.

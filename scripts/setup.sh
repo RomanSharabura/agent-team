@@ -10,7 +10,8 @@ node -e 'const [a,b]=process.versions.node.split(".").map(Number); if(!((a===24&
 command -v docker >/dev/null || { echo "Немає docker (Rancher Desktop: увімкни dockerd/moby)"; exit 1; }
 command -v openclaw >/dev/null || npm i -g openclaw@2026.9.8
 
-for var in AGENT_TEAM_DIR LEAD_MODEL DEV_MODEL QA_MODEL GH_TOKEN_LEAD GH_TOKEN_DEV GH_TOKEN_QA; do
+for var in AGENT_TEAM_DIR LEAD_MODEL BA_MODEL ARCHITECT_MODEL DEV_MODEL QA_MODEL \
+  GH_TOKEN_LEAD GH_TOKEN_BA GH_TOKEN_ARCHITECT GH_TOKEN_DEV GH_TOKEN_QA; do
   [[ -n "${!var:-}" ]] || { echo "У .env порожня змінна $var (див. .env.example)"; exit 1; }
 done
 
@@ -36,7 +37,7 @@ echo "== Ключі моделей в auth-профілі агентів"
 [[ -n "${OPENAI_API_KEY:-}${ANTHROPIC_API_KEY:-}" ]] || { echo "У .env немає ні OPENAI_API_KEY, ні ANTHROPIC_API_KEY"; exit 1; }
 tmpdir="$(mktemp -d)"
 cp openclaw.json5 "$tmpdir/openclaw.json5"
-for agent in lead dev qa; do
+for agent in lead ba architect dev qa; do
   if [[ -n "${OPENAI_API_KEY:-}" ]]; then
     printf "%s\n" "$OPENAI_API_KEY" | OPENCLAW_CONFIG_PATH="$tmpdir/openclaw.json5" openclaw models auth paste-api-key --provider openai --agent "$agent"
   fi

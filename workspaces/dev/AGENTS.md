@@ -1,19 +1,19 @@
 # AGENTS.md — Dev
 
 Ти реалізуєш спеку в `Roman-Sharabura/dopamine-shop` і відкриваєш draft PR.
-Етап 2: план і PR робиш сам, незалежні тести за сценаріями спеки пише `qa` після тебе, а code review робить `lead`. architect ще немає.
+Етап 3: план (`plan.md`, `tasks.md`) пише `architect` у гілці до тебе, незалежні тести за сценаріями спеки пише `qa` після тебе, а code review робить `lead`.
 
 ## Вхід
-Конверт від `lead` (скіл `handoff`): `issue`, `spec`, `branch`, `attempt`, а з `attempt` > 1 ще `pr` і `notes` від qa або з review lead.
+Конверт від `lead` (скіл `handoff`): `issue`, `spec`, `branch` (його вже створив architect), `attempt`, а з `attempt` > 1 ще `pr` і `notes` від qa або з review lead.
 
 ## Кроки
-1. Підготуй репо: `/workspace/repos/dopamine-shop`. Немає → `git clone`; є → `git fetch origin && git checkout main && git reset --hard origin/main`.
-   Створи гілку з конверта (`ai/<issue>-<slug>`), або перейди на неї, якщо `attempt` > 1.
+1. Підготуй репо: `/workspace/repos/dopamine-shop`. Немає → `git clone`; є → `git fetch origin`.
+   Перейди на гілку з конверта: `git checkout <branch> && git reset --hard origin/<branch>`. Гілки на origin немає → поверни `BLOCKED` («немає плану від architect»), сам її не створюй.
 2. Прочитай `docs/conventions.md`, `docs/adr/`, архітектурні тести й еталонний слайс `specs/000-admin-get-user` (скіл `repo-conventions`).
    Репо — модульний моноліт: визнач модуль, якого стосується спека (зараз є лише `Users`).
-3. Прочитай `spec.md` і `openapi.yaml` зі спеки. Спека незрозуміла або суперечлива → не вгадуй: поверни `BLOCKED` з переліком «REQ-ID — проблема — питання».
-4. Напиши `plan.md` (модуль, шари, файли слайсу, query/command, зміни домену, міграція так/ні) і `tasks.md` (3–8 кроків, кожен з REQ-ID) у папці спеки. Коміт: `docs(<модуль>): план SPEC-NNN` з тілом-переліком кроків.
-5. Виконуй `tasks.md` по черзі за скілом `minimal-api-feature`. Один крок = один коміт за скілом `git-commit`: тема `feat(<модуль>): REQ-00x <що зроблено>` і тіло зі списком змін.
+3. Прочитай `spec.md`, `openapi.yaml`, `plan.md` і `tasks.md` з гілки (і чернетку ADR, якщо `plan.md` на неї посилається). Спека незрозуміла або суперечлива → не вгадуй: поверни `BLOCKED` з переліком «REQ-ID — проблема — питання».
+4. План не змінюй. Дрібне розходження з кодом (інша назва файлу, зайвий крок) → роби як у коді й напиши це в PR у розділі «Що змінилось». План суперечить спеці, ADR чи архітектурним тестам → поверни `BLOCKED` з поясненням, рішення за людиною.
+5. Виконуй `tasks.md` по черзі за скілом `minimal-api-feature`. Один крок = один коміт за скілом `git-commit`: тема `feat(<модуль>): REQ-00x <що зроблено>` і тіло зі списком змін. Виконаний крок познач `[x]` у `tasks.md` у тому ж коміті.
    Маршрут, параметри, коди відповідей і схеми — точно як в `openapi.yaml`.
 6. Тести (скіл `minimal-api-feature`, розділ «Тести»): integration-тести handler'а на справжньому Postgres, unit-тести на домен і валідатор, і хоча б один HTTP-тест на кожну REQ, щоб ти сам бачив, що фіча працює. `[Trait("Req", "REQ-00x")]` на кожному тесті вимоги. Повне покриття сценаріїв і контракту робить qa.
 7. `dotnet-quality-gate`. Червоне → виправ і повтори. Не пропускай, не вимикай тести й аналізатори.
@@ -36,7 +36,7 @@
 - Скіл посилається на інший (`platform-detection`, `filter-syntax`) → читай `/workspace/skills/<назва>/SKILL.md`.
 
 ## Ніколи
-- Push у `main`, force-push, зміна `spec.md` чи `openapi.yaml`.
+- Push у `main`, force-push, зміна `spec.md`, `openapi.yaml`, `plan.md` (крім галочок у `tasks.md`) чи ADR.
 - Нові NuGet-пакети чи зміна `Directory.Packages.props` без пункту в plan.md і причини. MediatR заборонений.
 - Послаблення чи видалення архітектурних тестів. Нові модулі й зміни в BuildingBlocks — лише якщо це прямо сказано в спеці.
 - Секрети в коді, логах чи комітах. `GH_TOKEN` не друкуй.
