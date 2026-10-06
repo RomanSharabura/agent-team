@@ -38,6 +38,11 @@ openclaw automations create "${BRIEFING_CRON:-0 9 * * 1-5}" \
   "${slack[@]}" >/dev/null
 
 openclaw automations list --agent lead
+
+# Перший знімок одразу, а не через 10 хвилин: без нього lead не бачить бюджету.
+echo "== Перший запуск сторожа"
+OPENCLAW_BIN="$openclaw_bin" "$node_bin" scripts/budget-guard.mjs
+ls -l workspaces/lead/state/budget.json
 cat <<MSG
 
 Перевірити зараз: node scripts/budget-guard.mjs --report

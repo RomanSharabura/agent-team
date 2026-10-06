@@ -8,6 +8,7 @@
 ## [Unreleased]
 
 ### Fixed
+- lead більше не зупиняє чергу, якщо знімка бюджету `workspaces/lead/state/budget.json` ще немає: продовжує роботу і раз нагадує Roman запустити `./scripts/automations.sh`. Сам `automations.sh` тепер одразу запускає сторожа, тож знімок з'являється без 10 хвилин очікування.
 - Control UI (`openclaw dashboard`) і `openclaw logs` працюють: шлюз бере токен з `OPENCLAW_GATEWAY_TOKEN`, а `setup.sh` генерує його в `.env`, якщо порожньо.
 
 ### Changed
