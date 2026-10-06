@@ -7,6 +7,9 @@
 
 ## [Unreleased]
 
+### Changed
+- Моделі дешевші й стійкіші до rate limit: у кожного агента запасна модель (`*_FALLBACK_MODEL`), тож 429 від OpenAI більше не обриває хід. Рекомендований набір у `.env.example`: `gpt-6-luna` для lead і ba, `gpt-6-sol` / `gpt-6.1-sol` для architect, dev і qa замість `gpt-6-astra`. Контекст lead обмежено: сесії скидаються щодня о 04:00, а для `gpt-6-luna` діє ліміт 64k активного контексту з автоматичним стисненням.
+
 ### Added
 - Етап 4: бюджети і ранковий брифінг. Ліміти витрат на добу й місяць для команди та кожного агента в `budget.json`; сторож `scripts/budget-guard.mjs` раз на 10 хвилин бере витрати з `openclaw gateway usage-cost`, попереджає в Slack на 80% і на 100% вимикає heartbeat lead, а наступної доби вмикає сам. lead перевіряє знімок бюджету перед кожною передачею. Скіл `morning-briefing`: пн–пт о 09:00 lead пише в Slack, що зроблено, що в роботі, що чекає на Roman, прогрес цілі спринту і витрати. Ціль спринту — найближчий відкритий milestone, його issues lead бере першими. Розклад ставить `scripts/automations.sh`. Paperclip не використовуємо, причина — у README.
 - Етап 5, адмінка: агенти працюють і з `web/admin` dopamine-shop (React + Vite). Node 24 у пісочниці; скіли `admin-ui-feature` (слайс, форми, мутації, тести сторінки на Vitest) для architect, dev і qa та `admin-ui-gate` (`npm run check`) для dev і qa. ba перевіряє спеки лише для UI проти наявного `openapi.yaml`, architect планує UI-шар, qa пише тести сторінки в `*.qa.test.tsx`, lead перевіряє UI в review. Після оновлення треба перебудувати образ пісочниці.
