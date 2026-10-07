@@ -26,6 +26,7 @@ scripts/budget-guard.mjs spend tracking and team pause per budget.json
 - **Windows:** run everything in WSL2 (Ubuntu 24.04) with Rancher Desktop WSL integration enabled. Clone the repo into `~/src`, not `/mnt/c`. Git Bash and PowerShell do not work for `setup.sh` and the sandbox mounts.
 - Node **24.16+** (OpenClaw 2026.9.8 does not install on Node 22).
 - Rancher Desktop with the **dockerd (moby)** engine, so the `docker` command works.
+- `gh` and `jq` on the host (`sudo apt install gh jq`): OpenClaw checks the binaries a skill requires on the host, not in the sandbox, so without them lead does not see `pr-review`, `pipeline-resume` and `morning-briefing`.
 - A model API key (in `.env`).
 - Five GitHub tokens (one per agent; from a bot account you can use one classic PAT with scope `repo` in all five variables). If fine-grained PATs, then only for `Roman-Sharabura/dopamine-shop` (preferably from a separate bot account, so agent PRs can be approved):
   - Resource owner: the **Roman-Sharabura** organization. The organization must allow fine-grained tokens: Settings → Personal access tokens → Settings → "Allow access via fine-grained personal access tokens". If approval is enabled there, approve all tokens in Settings → Personal access tokens → Pending requests.

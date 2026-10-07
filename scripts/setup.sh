@@ -20,12 +20,22 @@ fi
 node -e 'const [a,b]=process.versions.node.split(".").map(Number); if(!((a===24&&b>=16)||a>=26)){console.error("Node >=24.16 required (current: "+process.version+")");process.exit(1)}'
 command -v docker >/dev/null || { echo "docker not found (Rancher Desktop: enable dockerd/moby)"; exit 1; }
 command -v openclaw >/dev/null || npm i -g openclaw@2026.9.8
+# OpenClaw checks a skill's requires.bins on the host, not in the sandbox: without jq on the host
+# lead silently loses pr-review, pipeline-resume and morning-briefing.
+for bin in gh jq; do
+  command -v "$bin" >/dev/null || { echo "$bin not found on the host: sudo apt install $bin (skills that require it are hidden from agents)"; exit 1; }
+done
 
 for var in AGENT_TEAM_DIR LEAD_MODEL BA_MODEL ARCHITECT_MODEL DEV_MODEL QA_MODEL \
   GH_TOKEN_LEAD GH_TOKEN_BA GH_TOKEN_ARCHITECT GH_TOKEN_DEV GH_TOKEN_QA \
   SLACK_APP_TOKEN SLACK_BOT_TOKEN SLACK_OWNER_ID; do
   [[ -n "${!var:-}" ]] || { echo "Variable $var is empty in .env (see .env.example)"; exit 1; }
 done
+# Agents see workspaces/ from AGENT_TEAM_DIR, while the scripts write here. Different folders = agents work from a stale copy.
+[[ "$(realpath "${AGENT_TEAM_DIR:-.}")" == "$(realpath .)" ]] || {
+  echo "AGENT_TEAM_DIR in .env ($AGENT_TEAM_DIR) is not this repo ($PWD). Set AGENT_TEAM_DIR=$PWD, restart the gateway, recreate the sandboxes."
+  exit 1
+}
 
 for var in LEAD_FALLBACK_MODEL BA_FALLBACK_MODEL ARCHITECT_FALLBACK_MODEL DEV_FALLBACK_MODEL QA_FALLBACK_MODEL; do
   [[ -n "${!var:-}" ]] || echo "Warning: $var is empty; on a rate limit the agent's turn will abort without a fallback model"
