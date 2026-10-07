@@ -26,6 +26,11 @@ for var in AGENT_TEAM_DIR LEAD_MODEL BA_MODEL ARCHITECT_MODEL DEV_MODEL QA_MODEL
   SLACK_APP_TOKEN SLACK_BOT_TOKEN SLACK_OWNER_ID; do
   [[ -n "${!var:-}" ]] || { echo "Variable $var is empty in .env (see .env.example)"; exit 1; }
 done
+# Agents see workspaces/ from AGENT_TEAM_DIR, while the scripts write here. Different folders = agents work from a stale copy.
+[[ "$(realpath "${AGENT_TEAM_DIR:-.}")" == "$(realpath .)" ]] || {
+  echo "AGENT_TEAM_DIR in .env ($AGENT_TEAM_DIR) is not this repo ($PWD). Set AGENT_TEAM_DIR=$PWD, restart the gateway, recreate the sandboxes."
+  exit 1
+}
 
 for var in LEAD_FALLBACK_MODEL BA_FALLBACK_MODEL ARCHITECT_FALLBACK_MODEL DEV_FALLBACK_MODEL QA_FALLBACK_MODEL; do
   [[ -n "${!var:-}" ]] || echo "Warning: $var is empty; on a rate limit the agent's turn will abort without a fallback model"

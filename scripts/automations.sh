@@ -7,6 +7,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 [[ -f .env ]] && { set -a; source .env; set +a; }
 export OPENCLAW_CONFIG_PATH="${OPENCLAW_CONFIG_PATH:-$PWD/openclaw.json5}"
+# Agents see workspaces/ from AGENT_TEAM_DIR, while the scripts write here. Different folders = agents work from a stale copy.
+[[ "$(realpath "${AGENT_TEAM_DIR:-.}")" == "$(realpath .)" ]] || {
+  echo "AGENT_TEAM_DIR in .env ($AGENT_TEAM_DIR) is not this repo ($PWD). Set AGENT_TEAM_DIR=$PWD, restart the gateway, recreate the sandboxes."
+  exit 1
+}
 [[ -n "${SLACK_OWNER_ID:-}" ]] || { echo "Variable SLACK_OWNER_ID is empty in .env"; exit 1; }
 
 # The command runs in the gateway process, so paths are absolute: the gateway PATH may lack nvm.
