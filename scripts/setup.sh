@@ -20,6 +20,11 @@ fi
 node -e 'const [a,b]=process.versions.node.split(".").map(Number); if(!((a===24&&b>=16)||a>=26)){console.error("Node >=24.16 required (current: "+process.version+")");process.exit(1)}'
 command -v docker >/dev/null || { echo "docker not found (Rancher Desktop: enable dockerd/moby)"; exit 1; }
 command -v openclaw >/dev/null || npm i -g openclaw@2026.9.8
+# OpenClaw checks a skill's requires.bins on the host, not in the sandbox: without jq on the host
+# lead silently loses pr-review, pipeline-resume and morning-briefing.
+for bin in gh jq; do
+  command -v "$bin" >/dev/null || { echo "$bin not found on the host: sudo apt install $bin (skills that require it are hidden from agents)"; exit 1; }
+done
 
 for var in AGENT_TEAM_DIR LEAD_MODEL BA_MODEL ARCHITECT_MODEL DEV_MODEL QA_MODEL \
   GH_TOKEN_LEAD GH_TOKEN_BA GH_TOKEN_ARCHITECT GH_TOKEN_DEV GH_TOKEN_QA \
