@@ -36,7 +36,7 @@
         scope: "agent",
         workspaceAccess: "rw",
         docker: {
-          image: "agent-team/dotnet-sandbox:10",
+          image: "agent-team/dotnet-sandbox:11",
           // Custom network (created by scripts/setup.sh): internet access for NuGet and GitHub
           // plus a shared Postgres for integration tests. The Docker socket is not mounted into the sandbox.
           network: "agent-team",

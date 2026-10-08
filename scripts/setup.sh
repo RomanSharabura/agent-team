@@ -42,7 +42,7 @@ for var in LEAD_FALLBACK_MODEL BA_FALLBACK_MODEL ARCHITECT_FALLBACK_MODEL DEV_FA
 done
 
 echo "== Building the sandbox"
-docker build -t agent-team/dotnet-sandbox:10 sandbox/
+docker build -t agent-team/dotnet-sandbox:11 sandbox/
 
 echo "== Network and Postgres for the sandbox"
 docker network inspect agent-team >/dev/null 2>&1 || docker network create agent-team
