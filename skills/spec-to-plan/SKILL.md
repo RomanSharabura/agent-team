@@ -32,7 +32,7 @@ Module: <M>. Slice: <F>. Contract and spec do not change.
 | UI | `web/admin/src/features/<module>/<feature>/...` | ... or "no changes" |
 | Tests | paths of unit, handler and HTTP tests | what they cover |
 
-- Command/query: `<F>Command(...) : ICommand<T>`; how the result maps to response codes.
+- Command/query: `<F>Command(...) : ICommand<T>`; how the result maps to response codes. With more than one outcome, `T` is a union `<F>Result(<Dto>, <Marker>, ...)` with one case per response code (`docs/conventions.md`, "Handler results").
 - REQ-001…: one line on how each REQ is covered (can be grouped).
 - Migration: yes (`<Name>`) / no. New packages: no (or the package, the reason and a link to the ADR).
 - ADR: none / `docs/adr/NNNN-slug.md` (proposed).

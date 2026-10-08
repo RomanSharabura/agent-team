@@ -8,6 +8,7 @@ Commits: subject ≤ 72 characters and a body with a list of changes (template `
 ## [Unreleased]
 
 ### Changed
+- `minimal-api-feature`, `spec-to-plan` and `pr-review` skills: handler results with more than one outcome are C# 15 unions (`public union FResult(FDto, MissingUser, ...)`), endpoints switch over every case without `_` or `!`, per dopamine-shop `docs/conventions.md`. After pulling: `scripts/sync-skills.sh`. (#31)
 - The sandbox image is `agent-team/dotnet-sandbox:11` with the .NET 11 SDK (preview) for dopamine-shop's move to .NET 11 and C# 15, and keeps the .NET 10 SDK for older branches. After pulling: rebuild the image, `openclaw sandbox recreate --agent <id>` for every agent, restart the gateway (README, "Moving to .NET 11"). (#30)
 - `minimal-api-feature` skill: telemetry goes through OpenTelemetry in dopamine-shop's ServiceDefaults (logs and traces in Seq, ADR 0008); agents add no Serilog sinks or exporters and register new `ActivitySource`/`Meter` names there.
 - Every agent's AGENTS.md has an explicit Language rule: always write in English, even when the session history, memory notes or older GitHub comments are in Ukrainian. README troubleshooting explains how to start a fresh session.
