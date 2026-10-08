@@ -90,7 +90,7 @@ Notes:
 - **Fallback model.** Each agent has `model: { primary, fallbacks }` (the `*_FALLBACK_MODEL` variables). Anthropic counts rate limits separately per model class, so on a 429 OpenClaw, after a short retry, switches to the fallback instead of aborting the turn.
 - **Lead context.** The lead main session (Slack and all handoffs) used to grow without bound: every tool call sent it in full, hence ~59k tokens per request (on OpenAI it hit 200k TPM). Now sessions restart daily at 04:00 (`session.reset`), and the lead model has a 64k active context limit (`models.providers.anthropic.models`), after which OpenClaw compacts the history. That also keeps Haiku 5.5 under 100k-token prompts, where its price is 5x lower. If you change `LEAD_MODEL`, change the `id` in that entry too.
 - **Prompt caching.** OpenClaw turns on Anthropic's 5-minute prompt cache by itself for the direct API; cache reads cost a tenth of input.
-- **Switching models.** Presets live in [`models/`](models): `anthropic.env` (the default above) and `openai.env` (lead and ba on `gpt-6-luna`, the rest on `gpt-6.1-sol`). Switch with one command, for the whole team or for some agents:
+- **Switching models.** Presets live in [`models/`](models): `anthropic.env` (the default above) and `openai.env` (the last OpenAI mix: lead on `gpt-6-luna`, ba, dev and qa on `gpt-6.1-sol`, architect on `gpt-6-astra`). Switch with one command, for the whole team or for some agents:
   ```bash
   ./scripts/use-models.sh openai            # whole team to OpenAI
   ./scripts/use-models.sh anthropic dev qa  # only dev and qa back to Claude
