@@ -16,10 +16,12 @@ Let `M` be the module (for example `Users`), `F` the feature (for example `ListU
    - `FQuery.cs` or `FCommand.cs`: `public sealed record ... : IQuery<T>` / `ICommand<T>` / `ICommand`.
    - `FHandler.cs`: `internal sealed class FHandler(IMDbContext db) : IQueryHandler<FQuery, T>`; `AsNoTracking()` for reads; `CancellationToken` in every async call.
    - `FValidator.cs`: `internal sealed class : AbstractValidator<FQuery>`.
+   - `FResult.cs`: if the handler has more than one outcome (not found, blocked, conflict...), `T` is a C# 15 union: `public readonly union FResult(FDto, MissingUser, BlockedUser);`. Outcomes without data are `public sealed record MissingUser;` markers. The handler returns the case directly (`return new MissingUser();`). Never a status enum plus nullable fields, never `null` for "not found". Rules: section "Handler results: C# 15 unions" in `docs/conventions.md`. Your training data predates `union`: copy `AddWishlistItemResult` in the Wishlist module.
    - DTOs needed by several slices go in `Common/`. Do not use types from other slices.
 3. **Presentation** (`.../DopamineShop.Modules.M.Presentation/Features/F/FEndpoint.cs`):
    `internal sealed class FEndpoint : IEndpoint`; in `MapEndpoint` — `app.MapGet(...)` with `.WithName("F").WithTags(Tags.<...>)`.
    The handler is injected as a parameter: `IQueryHandler<FQuery, T> handler`. Return `Results<...>` via `TypedResults`.
+   Map a union result with `return result switch { FDto dto => TypedResults.Ok(dto), MissingUser => TypedResults.Problem(...), ... };`: one arm per case, no `_` arm and no `!`.
    Query parameters — separate nullable parameters or an `[AsParameters]` record; default values — as in openapi.yaml.
    Domain types and EF are forbidden in Presentation: only Query/Command and DTOs.
 4. **Registration** is automatic (handlers, validators, endpoints). Do not touch `Program.cs`.
@@ -31,7 +33,7 @@ Let `M` be the module (for example `Users`), `F` the feature (for example `ListU
 
 ## Tests
 - Unit (`tests/Modules/M/...UnitTests`): only the domain and validators, no DB.
-- Handlers: `tests/DopamineShop.IntegrationTests/Modules/M/Handlers/F/`, the handler is resolved from DI via `factory.InScopeAsync<IQueryHandler<FQuery, T>, T>(...)`.
+- Handlers: `tests/DopamineShop.IntegrationTests/Modules/M/Handlers/F/`, the handler is resolved from DI via `factory.InScopeAsync<IQueryHandler<FQuery, T>, T>(...)`. Assert a union case with `result.Value.Should().BeOfType<FDto>().Subject`.
 - HTTP scenarios: `tests/DopamineShop.IntegrationTests/Modules/M/FTests.cs`, names `REQ_00x_<scenario>`.
 - DB — a real PostgreSQL; each test class (`IClassFixture<ApiFactory>`) gets its own empty DB.
 
