@@ -80,17 +80,22 @@ A truly separate identity for each agent (its own avatar in the issue timeline, 
 - **a GitHub App per agent** (`dopamine-lead[bot]`…): short-lived tokens instead of PATs and precise permissions on a single repository. Needs a script that generates an installation token from the App private key before the agent runs (the token lives an hour), so this is a separate stage.
 
 ## Models
-The team runs on Anthropic; the recommended set is in [`.env.example`](.env.example). It keeps the price profile of the earlier OpenAI set:
-- **lead and ba: `claude-haiku-5-5`** (fallback `claude-sonnet-5-5`). $0.10/$0.50 per 1M input/output tokens, the same as `gpt-6-luna`. Lead mostly orchestrates and reviews against a checklist, ba validates a spec. If lead's reviews get shallow, move `LEAD_MODEL` to Sonnet first.
-- **architect, dev, and qa: `claude-sonnet-5-5`** (fallback `claude-haiku-5-5`). $2/$10, the same as `gpt-6.1-sol`. The fallback only fires on a rate limit or an outage, so a cheap one is fine.
-- **Opus** (`claude-opus-5-5`, $4/$20) is not used by default: it doubles dev's cost. Set `DEV_MODEL=anthropic/claude-opus-5-5` if Sonnet can't cope with a task.
+The team runs on one provider at a time, Anthropic by default; both sets are in [`.env.example`](.env.example) and in the presets in [`models/`](models). The Anthropic set mirrors the OpenAI one tier by tier:
+
+| Agent | Anthropic | OpenAI | Anthropic $/1M in/out |
+|---|---|---|---|
+| lead | `claude-haiku-5-5` (fb `claude-sonnet-5-5`) | `gpt-6-luna` (fb `gpt-5.6-luna`) | 0.10 / 0.50 |
+| ba, dev, qa | `claude-sonnet-5-5` (fb `claude-haiku-5-5`) | `gpt-6.1-sol` (fb `gpt-6-sol`; ba `gpt-6.1-sol`) | 2 / 10 |
+| architect | `claude-opus-5-5` (fb `claude-sonnet-5-5`) | `gpt-6-astra` (fb `gpt-6.1-sol`) | 4 / 20 |
+
+Lead mostly orchestrates and reviews against a checklist; if its reviews get shallow, move `LEAD_MODEL` to Sonnet first. The fallback only fires on a rate limit or an outage, so a cheap one is fine.
 
 Notes:
 - **OpenClaw 2026.9.9 or newer is required.** 2026.9.8 doesn't know Claude Haiku 5.5 (no price, no thinking settings).
 - **Fallback model.** Each agent has `model: { primary, fallbacks }` (the `*_FALLBACK_MODEL` variables). Anthropic counts rate limits separately per model class, so on a 429 OpenClaw, after a short retry, switches to the fallback instead of aborting the turn.
 - **Lead context.** The lead main session (Slack and all handoffs) used to grow without bound: every tool call sent it in full, hence ~59k tokens per request (on OpenAI it hit 200k TPM). Now sessions restart daily at 04:00 (`session.reset`), and the lead model has a 64k active context limit (`models.providers.anthropic.models`), after which OpenClaw compacts the history. That also keeps Haiku 5.5 under 100k-token prompts, where its price is 5x lower. If you change `LEAD_MODEL`, change the `id` in that entry too.
 - **Prompt caching.** OpenClaw turns on Anthropic's 5-minute prompt cache by itself for the direct API; cache reads cost a tenth of input.
-- **Switching models.** Presets live in [`models/`](models): `anthropic.env` (the default above) and `openai.env` (the last OpenAI mix: lead on `gpt-6-luna`, ba, dev and qa on `gpt-6.1-sol`, architect on `gpt-6-astra`). Switch with one command, for the whole team or for some agents:
+- **Switching models.** Presets live in [`models/`](models): `anthropic.env` (the default) and `openai.env` (the OpenAI column above). Switch with one command, for the whole team or for some agents:
   ```bash
   ./scripts/use-models.sh openai            # whole team to OpenAI
   ./scripts/use-models.sh anthropic dev qa  # only dev and qa back to Claude
