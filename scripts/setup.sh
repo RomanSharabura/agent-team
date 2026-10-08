@@ -19,7 +19,13 @@ fi
 
 node -e 'const [a,b]=process.versions.node.split(".").map(Number); if(!((a===24&&b>=16)||a>=26)){console.error("Node >=24.16 required (current: "+process.version+")");process.exit(1)}'
 command -v docker >/dev/null || { echo "docker not found (Rancher Desktop: enable dockerd/moby)"; exit 1; }
-command -v openclaw >/dev/null || npm i -g openclaw@2026.9.8
+# 2026.9.9 is the first release that knows Claude Haiku 5.5 (lead and ba). An older install is upgraded in place;
+# restart the gateway afterwards so it runs the new version.
+OPENCLAW_VERSION=2026.9.9
+if [[ "$(openclaw --version 2>/dev/null)" != *"$OPENCLAW_VERSION"* ]]; then
+  echo "== Installing OpenClaw $OPENCLAW_VERSION"
+  npm i -g "openclaw@$OPENCLAW_VERSION"
+fi
 # OpenClaw checks a skill's requires.bins on the host, not in the sandbox: without jq on the host
 # lead silently loses pr-review, pipeline-resume and morning-briefing.
 for bin in gh jq; do
@@ -58,11 +64,17 @@ echo "== Skills into agent workspaces"
 ./scripts/sync-skills.sh
 
 echo "== Slack plugin"
-# plugins install also rewrites the config, so install against a temporary copy; plugins.entries.slack is already in openclaw.json5.
-if ! OPENCLAW_CONFIG_PATH="$PWD/openclaw.json5" openclaw plugins list --json 2>/dev/null | grep -q '"id": *"slack"'; then
+# plugins install/update also rewrite the config, so install against a temporary copy; plugins.entries.slack is already in openclaw.json5.
+slack_version="$(OPENCLAW_CONFIG_PATH="$PWD/openclaw.json5" openclaw plugins list --json 2>/dev/null \
+  | jq -r '(if type == "array" then . else .plugins end) | map(select(.id == "slack")) | .[0].version // empty' || true)"
+if [[ "$slack_version" != "$OPENCLAW_VERSION" ]]; then
   tmpdir="$(mktemp -d)"
   cp openclaw.json5 "$tmpdir/openclaw.json5"
-  OPENCLAW_CONFIG_PATH="$tmpdir/openclaw.json5" openclaw plugins install @openclaw/slack@2026.9.8
+  if [[ -z "$slack_version" ]]; then
+    OPENCLAW_CONFIG_PATH="$tmpdir/openclaw.json5" openclaw plugins install "@openclaw/slack@$OPENCLAW_VERSION"
+  else
+    OPENCLAW_CONFIG_PATH="$tmpdir/openclaw.json5" openclaw plugins update "@openclaw/slack@$OPENCLAW_VERSION"
+  fi
   rm -rf "$tmpdir"
 fi
 

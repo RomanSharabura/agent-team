@@ -1,23 +1,29 @@
 // Spec → PR team config. Stage 3: lead → ba → architect → dev → qa; lead does the code review.
 // Stage 5 (partial): dev and qa also work on the web/admin admin UI (Node 24 in the sandbox, admin-ui-* skills).
 // Run: export OPENCLAW_CONFIG_PATH="$AGENT_TEAM_DIR/openclaw.json5" (see README).
-// Checked against the OpenClaw 2026.9.8 documentation.
+// Checked against the OpenClaw 2026.9.9 documentation (2026.9.9 is the first release with Claude Haiku 5.5).
 {
   // Without gateway.mode the gateway refuses to start (openclaw gateway).
   // Gateway token from .env (setup.sh generates it): without it the Control UI (openclaw dashboard) asks for a token
   // that exists nowhere, and openclaw logs prints "requires credentials". The CLI reads the same variable itself.
   gateway: { mode: "local", bind: "loopback", auth: { mode: "token", token: "${OPENCLAW_GATEWAY_TOKEN}" } },
   // API keys are not stored here but in each agent's auth profile (scripts/setup.sh).
-  // OpenAI with an API key goes through the built-in OpenClaw runtime, not through Codex.
+  // Both providers go through the built-in OpenClaw runtime: an Anthropic API key, not the Claude CLI login,
+  // and OpenAI with an API key, not Codex.
   models: {
     providers: {
+      anthropic: {
+        agentRuntime: { id: "openclaw" },
+        // Active context limit for the lead model (default: the full 1M window). Without it the lead main session
+        // with Slack conversations and all handoffs grows to hundreds of thousands of tokens, and every tool
+        // call sends it in full. At 64k OpenClaw compacts history earlier, and Haiku 5.5 stays in its
+        // cheap price tier (prompts up to 100k tokens). The same entry applies to ba on Haiku.
+        // OpenClaw takes the model price and window from the catalog. Changed LEAD_MODEL → change the id here.
+        models: [{ id: "claude-haiku-5-5", name: "Claude Haiku 5.5", contextTokens: 64000 }],
+      },
+      // Kept for switching back to OpenAI (see .env.example): same 64k cap for gpt-6-luna.
       openai: {
         agentRuntime: { id: "openclaw" },
-        // Active context limit for the lead model (default 272k). Without it the lead main session
-        // with Slack conversations and all handoffs grows to hundreds of thousands of tokens, and every tool
-        // call sends it in full: that is how lead hit the 200k TPM limit on gpt-6-luna.
-        // At 64k OpenClaw compacts history earlier. OpenClaw takes the model price and window from the catalog.
-        // Changed LEAD_MODEL → change the id here.
         models: [{ id: "gpt-6-luna", name: "GPT-6 Luna", contextTokens: 64000 }],
       },
     },
@@ -28,8 +34,9 @@
   agents: {
     ownership: "explicit",
     // Each agent's model is an object with fallbacks: a string in OpenClaw means "no fallback model",
-    // and a rate limit (429) aborts the turn. The fallback model has a different TPM limit, because OpenAI counts it
-    // separately per model. *_FALLBACK_MODEL empty → only a warning, turn runs without a fallback.
+    // and a rate limit (429) aborts the turn. The fallback is a different model class (Haiku ↔ Sonnet), because
+    // Anthropic, like OpenAI, counts rate limits separately per model. *_FALLBACK_MODEL empty → only a warning,
+    // turn runs without a fallback.
     defaults: {
       sandbox: {
         mode: "all",
