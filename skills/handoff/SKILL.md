@@ -39,9 +39,9 @@ Lead passes the envelope via `sessions_spawn` with `agentId` (`ba`, `architect`,
 ## Budget
 Before every `sessions_spawn` lead reads the budget guard snapshot:
 ```bash
-jq '{updatedAt, paused, over: [.checks[] | select(.level == "over") | .scope]}' /workspace/state/budget.json
+jq '{updatedAt, paused, blocked, over: [.checks[] | select(.level == "over" and .active) | "\(.provider // "") \(.scope)"]}' /workspace/state/budget.json
 ```
-- `paused: true`, or `over` contains `team` or the agent you are handing off to → do not hand off. Label `ai-blocked` and a blocker comment with the envelope, as when `sessions_spawn` is unavailable, with the reason "budget: <what was exceeded>". Do not write to the human: the guard has already notified Roman.
+- `paused: true`, or `blocked` contains the agent you are handing off to → do not hand off (the guard already counts limits per provider: an exhausted limit of a provider the agent does not run on is not in `blocked`). Label `ai-blocked` and a blocker comment with the envelope, as when `sessions_spawn` is unavailable, with the reason "budget: <what was exceeded>". Do not write to the human: the guard has already notified Roman.
 - No file → hand off (the guard has not run yet), but mention in the next message to the human that spend tracking is not working.
 
 Immediately after `sessions_spawn` lead calls `sessions_yield` and waits for the envelope that way. Do not end the turn without a yield: the result would then arrive as a separate turn in which OpenClaw may not provide `sessions_spawn`, and the next handoff would be impossible. After the yield the turn continues with the same tools that were available at spawn time. Do not poll `subagents` or `sessions_list` in a loop.

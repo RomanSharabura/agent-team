@@ -24,7 +24,7 @@ scripts/budget-guard.mjs spend tracking and team pause per budget.json
 
 ## What you need on the machine
 - **Windows:** run everything in WSL2 (Ubuntu 24.04) with Rancher Desktop WSL integration enabled. Clone the repo into `~/src`, not `/mnt/c`. Git Bash and PowerShell do not work for `setup.sh` and the sandbox mounts.
-- Node **24.16+** (OpenClaw 2026.9.8 does not install on Node 22).
+- Node **24.16+** (OpenClaw 2026.9.9 does not install on Node 22).
 - Rancher Desktop with the **dockerd (moby)** engine, so the `docker` command works.
 - `gh` and `jq` on the host (`sudo apt install gh jq`): OpenClaw checks the binaries a skill requires on the host, not in the sandbox, so without them lead does not see `pr-review`, `pipeline-resume` and `morning-briefing`.
 - A model API key (in `.env`).
@@ -80,24 +80,43 @@ A truly separate identity for each agent (its own avatar in the issue timeline, 
 - **a GitHub App per agent** (`dopamine-lead[bot]`…): short-lived tokens instead of PATs and precise permissions on a single repository. Needs a script that generates an installation token from the App private key before the agent runs (the token lives an hour), so this is a separate stage.
 
 ## Models
-The recommended OpenAI set is in [`.env.example`](.env.example): cheap `gpt-6-luna` for lead and ba, `gpt-6.1-sol` (fallback `gpt-6-sol`) for architect, dev, and qa: same price as `gpt-6-sol`, but cached tokens are half the price, and the agents work in turn, so they don't need separate TPM limits. `gpt-6-astra` is 5x more expensive than sol on input tokens and 10x on cached ones; most likely dev on it accounted for most of the ~$16 for a single task (check `node scripts/budget-guard.mjs --report`).
-- **Fallback model.** Each agent has `model: { primary, fallbacks }` (the `*_FALLBACK_MODEL` variables). OpenAI counts the tokens-per-minute (TPM) limit separately per model, so on a 429 OpenClaw, after a short retry, switches to the fallback instead of aborting the turn.
-- **Lead context.** The lead main session (Slack and all handoffs) used to grow without bound: every tool call sent it in full, hence ~59k tokens per request and 200k TPM per minute. Now sessions restart daily at 04:00 (`session.reset`), and `gpt-6-luna` has a 64k active context limit (`models.providers.openai.models`), after which OpenClaw compacts the history. If you change `LEAD_MODEL`, change the `id` in that entry too.
-- Cost per agent: `node scripts/budget-guard.mjs --report`. Your TPM limit per model is shown at platform.openai.com/settings/organization/limits; it grows with the organization tier.
+The team runs on one provider at a time, Anthropic by default; both sets are in [`.env.example`](.env.example) and in the presets in [`models/`](models). The Anthropic set mirrors the OpenAI one tier by tier:
+
+| Agent | Anthropic | OpenAI | Anthropic $/1M in/out |
+|---|---|---|---|
+| lead | `claude-haiku-5-5` (fb `claude-sonnet-5-5`) | `gpt-6-luna` (fb `gpt-5.6-luna`) | 0.10 / 0.50 |
+| ba, dev, qa | `claude-sonnet-5-5` (fb `claude-haiku-5-5`) | `gpt-6.1-sol` (fb `gpt-6-sol`; ba `gpt-6.1-sol`) | 2 / 10 |
+| architect | `claude-opus-5-5` (fb `claude-sonnet-5-5`) | `gpt-6-astra` (fb `gpt-6.1-sol`) | 4 / 20 |
+
+Lead mostly orchestrates and reviews against a checklist; if its reviews get shallow, move `LEAD_MODEL` to Sonnet first. The fallback only fires on a rate limit or an outage, so a cheap one is fine.
+
+Notes:
+- **OpenClaw 2026.9.9 or newer is required.** 2026.9.8 doesn't know Claude Haiku 5.5 (no price, no thinking settings).
+- **Fallback model.** Each agent has `model: { primary, fallbacks }` (the `*_FALLBACK_MODEL` variables). Anthropic counts rate limits separately per model class, so on a 429 OpenClaw, after a short retry, switches to the fallback instead of aborting the turn.
+- **Lead context.** The lead main session (Slack and all handoffs) used to grow without bound: every tool call sent it in full, hence ~59k tokens per request (on OpenAI it hit 200k TPM). Now sessions restart daily at 04:00 (`session.reset`), and the lead model has a 64k active context limit (`models.providers.anthropic.models`), after which OpenClaw compacts the history. That also keeps Haiku 5.5 under 100k-token prompts, where its price is 5x lower. If you change `LEAD_MODEL`, change the `id` in that entry too.
+- **Prompt caching.** OpenClaw turns on Anthropic's 5-minute prompt cache by itself for the direct API; cache reads cost a tenth of input.
+- **Switching models.** Presets live in [`models/`](models): `anthropic.env` (the default) and `openai.env` (the OpenAI column above). Switch with one command, for the whole team or for some agents:
+  ```bash
+  ./scripts/use-models.sh openai            # whole team to OpenAI
+  ./scripts/use-models.sh anthropic dev qa  # only dev and qa back to Claude
+  ```
+  It rewrites the `*_MODEL` / `*_FALLBACK_MODEL` lines in `.env` and puts the matching key from `.env` (`ANTHROPIC_API_KEY` / `OPENAI_API_KEY`) into those agents' auth profiles, so that key must be filled in first. Then restart the gateway after `set -a; source .env; set +a`: the config reads the model variables only at gateway start. No sandbox recreate is needed. Your own mix: copy a preset to `models/<name>.env` and edit it, or change one line in `.env` by hand (the key for that provider must already be in the agent's profile: `./scripts/setup.sh` puts every filled key in). For a single chat, `/model <provider/model>` in the chat with the agent switches only that session.
+- **Lead context cap per model.** The 64k cap is set per model id in `models.providers.<provider>.models` (Haiku 5.5 and gpt-6-luna are there). Moving lead to a model not listed there drops the cap: add an entry with its `id`.
+- Cost per agent: `node scripts/budget-guard.mjs --report`. Your rate limits per model are in the Anthropic Console (Settings → Limits); they grow with the usage tier.
 
 ## Stage 4: queue without manual start, budgets, briefing
 The team takes tasks from the queue on its own: the lead heartbeat every 10 minutes (08:00–23:00) finishes what was started (`pipeline-resume`) and takes the next `ai-ready`. On top of that, two jobs in the OpenClaw scheduler:
-- **Budget guard** (every 10 min, no model call): `scripts/budget-guard.mjs` gets each agent's spend from `openclaw gateway usage-cost`, writes a snapshot to `workspaces/lead/state/budget.json`, and compares it with the limits in [`budget.json`](budget.json). Over 80%: a warning in Slack. Over 100%: `openclaw system heartbeat disable` and a message: the agent finishes its current step, and lead stops before the next handoff with `ai-blocked` and an envelope in a comment. The next day (UTC), when spend is within limits, the guard re-enables the heartbeat itself, and the pipeline continues from the same step.
+- **Budget guard** (every 10 min, no model call): `scripts/budget-guard.mjs` gets each agent's spend per provider from the gateway (`sessions.usage`, by day and model) and its tokens from `openclaw gateway usage-cost`, writes a snapshot to `workspaces/lead/state/budget.json`, and compares it with the limits in [`budget.json`](budget.json). Dollar limits are **per provider** (`providers.anthropic`, `providers.openai`: team daily/monthly and per agent daily), because each provider is a separate account with its own money: a provider's limit counts only that provider's calls, and only while some agent runs on it (the `*_MODEL` lines in `.env`). So when the Anthropic month is used up, `./scripts/use-models.sh openai` and a gateway restart get the team going again, and the other way round. The top-level `team`/`agents` token limits are provider-independent, a fallback for models OpenClaw has no price for. Over 80%: a warning in Slack. Over 100%: `openclaw system heartbeat disable` and a message: the agent finishes its current step, and lead stops before the next handoff with `ai-blocked` and an envelope in a comment. The next day (UTC), when spend is within limits, the guard re-enables the heartbeat itself, and the pipeline continues from the same step.
 - **Morning briefing** (Mon–Fri at 09:00 Kyiv time): lead, using the `morning-briefing` skill, posts in Slack what is done, what is in progress, what is waiting on you, sprint goal progress, and spend (yesterday, month to date, ≈ $ per PR).
 
 **Sprint goal**: the open milestone in dopamine-shop with the nearest `due_on` (the milestone description is the goal itself). Lead takes `ai-ready` from that milestone first, and the briefing shows its progress. The milestone is optional: without one the queue goes oldest first.
 
 To enable:
 1. `git pull && ./scripts/sync-skills.sh`, restart the gateway.
-2. Check the limits in `budget.json` (dollars are OpenClaw's estimate from model prices, `tokens` is a fallback if OpenClaw doesn't know the model's prices). Changes to `budget.json` take effect from the next guard run, no restart needed.
+2. Check the limits in `budget.json`: set each provider's `monthly.usd` to what that account may spend (dollars are OpenClaw's estimate from model prices; `tokens` is a fallback if OpenClaw doesn't know the model's prices). Per-agent daily caps follow each preset's models: architect gets more on Opus (Anthropic) and on gpt-6-astra (OpenAI). Changes to `budget.json` take effect from the next guard run, no restart needed.
 3. With the gateway running: `./scripts/automations.sh`. Re-running updates the same jobs. For a different briefing time, set `BRIEFING_CRON` and `BRIEFING_TZ` in `.env`.
 4. Check: `node scripts/budget-guard.mjs --report` (spend table, changes nothing), `openclaw automations list --agent lead`, briefing right now: `openclaw automations run <id Morning briefing>`.
-5. A safeguard beyond the guard: a project spend limit in the OpenAI dashboard (Settings → Limits). The guard sees spend with up to a 10-minute delay and does not interrupt a step already running.
+5. A safeguard beyond the guard: a monthly spend limit in each provider's console (Anthropic: Settings → Limits; OpenAI: project limits). The guard sees spend with up to a 10-minute delay and does not interrupt a step already running.
 
 Spend is also visible in the Control UI (Usage) and via `openclaw gateway usage-cost --all-agents`, `openclaw status --usage`.
 
@@ -131,12 +150,12 @@ dopamine-shop targets .NET 11 RC1 and C# 15 (its ADR 0012), so the sandbox image
 ## Moving from stage 1
 1. `git pull && ./scripts/sync-skills.sh`
 2. In `.env`, add `QA_MODEL` and `GH_TOKEN_QA` (see `.env.example`).
-3. Model key for qa: `./scripts/setup.sh` or `printf "%s\n" "$OPENAI_API_KEY" | openclaw models auth paste-api-key --provider openai --agent qa` on a temporary copy of the config.
+3. Model key for qa: `./scripts/setup.sh` or `printf "%s\n" "$ANTHROPIC_API_KEY" | openclaw models auth paste-api-key --provider anthropic --agent qa` on a temporary copy of the config.
 4. Restart the gateway.
 
 ## Troubleshooting
 - The Control UI asks for a "Gateway secret", or `openclaw logs` prints `requires credentials`: `.env` has no `OPENCLAW_GATEWAY_TOKEN`. Run `./scripts/setup.sh` (generates the token), `set -a; source .env; set +a`, and restart the gateway. Then `openclaw dashboard --no-open` gives a link with a one-time login. Do not run `openclaw doctor` on `openclaw.json5`: it rewrites the file.
-- `No route-compatible authentication source`: the model key is not in the agent's auth profile. Rerun `./scripts/setup.sh` with a filled-in `.env` (or `printf "%s\n" "$OPENAI_API_KEY" | openclaw models auth paste-api-key --provider openai --agent lead`, and the same for `ba`, `architect`, `dev`, and `qa`).
+- `No route-compatible authentication source`: the model key is not in the agent's auth profile. Rerun `./scripts/setup.sh` with a filled-in `.env` (or `printf "%s\n" "$ANTHROPIC_API_KEY" | openclaw models auth paste-api-key --provider anthropic --agent lead`, and the same for `ba`, `architect`, `dev`, and `qa`).
 - `agents/main/agent` instead of `agents/lead/agent` in the output: `.env` and `OPENCLAW_CONFIG_PATH` are not loaded in this tab.
 - `Gateway not reachable`: the gateway is stopped; run `openclaw gateway --verbose` or use `openclaw agent --local ...`.
 - An agent still answers in Ukrainian: `git pull`, restart the gateway, then start a fresh session (`/new` in the chat with the agent, or wait for the daily 04:00 reset). An old session keeps its Ukrainian history, and the model tends to continue in that language. Notes agents wrote earlier in `workspaces/<agent>/memory/` may also be Ukrainian; the Language rule in AGENTS.md overrides them, or delete them.
