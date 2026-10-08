@@ -14,6 +14,7 @@ dotnet format --verify-no-changes --no-restore || { dotnet format --no-restore; 
 dotnet test --no-build
 ```
 
+- The format step also checks the IDE "can be simplified" rules that dopamine-shop's `.editorconfig` raises to warnings (IDE0046 `if` → return/ternary, collection expressions, primary constructors, `readonly` unions, naming). Some of them, such as IDE0046, show up only here, not in `dotnet build`. `dotnet format` fixes most of them. When it cannot, follow `docs/conventions.md`, section "Code": rename by hand for IDE1006 (private fields `camelCase` without `_`), and move several guard clauses into a `void EnsureValid(...)` method instead of nesting `? throw :` ternaries. After `dotnet format`, read the diff before you commit.
 - Warnings are errors (`TreatWarningsAsErrors`). Fix the cause; `#pragma warning disable` only with a comment giving the reason and a mention in the PR.
 - Integration tests run on a real PostgreSQL. In the sandbox the server is set by the `TEST_POSTGRES_CONNECTION` variable; if it is empty and Docker is unavailable, the integration tests will fail — this is an environment problem: return `BLOCKED` with the error text, do not disable the tests.
 - Architecture tests (`tests/DopamineShop.ArchitectureTests`) are part of `dotnet test`. A red architecture test means the code breaks a rule from `docs/conventions.md`: change the code.
