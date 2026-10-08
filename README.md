@@ -90,7 +90,13 @@ Notes:
 - **Fallback model.** Each agent has `model: { primary, fallbacks }` (the `*_FALLBACK_MODEL` variables). Anthropic counts rate limits separately per model class, so on a 429 OpenClaw, after a short retry, switches to the fallback instead of aborting the turn.
 - **Lead context.** The lead main session (Slack and all handoffs) used to grow without bound: every tool call sent it in full, hence ~59k tokens per request (on OpenAI it hit 200k TPM). Now sessions restart daily at 04:00 (`session.reset`), and the lead model has a 64k active context limit (`models.providers.anthropic.models`), after which OpenClaw compacts the history. That also keeps Haiku 5.5 under 100k-token prompts, where its price is 5x lower. If you change `LEAD_MODEL`, change the `id` in that entry too.
 - **Prompt caching.** OpenClaw turns on Anthropic's 5-minute prompt cache by itself for the direct API; cache reads cost a tenth of input.
-- **Back to OpenAI.** Put the OpenAI models from the comment in `.env.example` into `.env`, fill `OPENAI_API_KEY`, rerun `./scripts/setup.sh`. The `openai` provider entry is still in `openclaw.json5`.
+- **Switching models.** Presets live in [`models/`](models): `anthropic.env` (the default above) and `openai.env` (lead and ba on `gpt-6-luna`, the rest on `gpt-6.1-sol`). Switch with one command, for the whole team or for some agents:
+  ```bash
+  ./scripts/use-models.sh openai            # whole team to OpenAI
+  ./scripts/use-models.sh anthropic dev qa  # only dev and qa back to Claude
+  ```
+  It rewrites the `*_MODEL` / `*_FALLBACK_MODEL` lines in `.env` and puts the matching key from `.env` (`ANTHROPIC_API_KEY` / `OPENAI_API_KEY`) into those agents' auth profiles, so that key must be filled in first. Then restart the gateway after `set -a; source .env; set +a`: the config reads the model variables only at gateway start. No sandbox recreate is needed. Your own mix: copy a preset to `models/<name>.env` and edit it, or change one line in `.env` by hand (the key for that provider must already be in the agent's profile: `./scripts/setup.sh` puts every filled key in). For a single chat, `/model <provider/model>` in the chat with the agent switches only that session.
+- **Lead context cap per model.** The 64k cap is set per model id in `models.providers.<provider>.models` (Haiku 5.5 and gpt-6-luna are there). Moving lead to a model not listed there drops the cap: add an entry with its `id`.
 - Cost per agent: `node scripts/budget-guard.mjs --report`. Your rate limits per model are in the Anthropic Console (Settings → Limits); they grow with the usage tier.
 
 ## Stage 4: queue without manual start, budgets, briefing

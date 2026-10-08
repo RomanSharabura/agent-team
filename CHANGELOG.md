@@ -8,6 +8,7 @@ Commits: subject ≤ 72 characters and a body with a list of changes (template `
 ## [Unreleased]
 
 ### Changed
+- Switching models is one command: `./scripts/use-models.sh <anthropic|openai> [agent...]` applies a preset from `models/*.env` to the whole team or to the named agents (rewrites the model lines in `.env`, puts the provider key into their auth profiles), then restart the gateway.
 - The team runs on Anthropic instead of OpenAI: lead and ba on `claude-haiku-5-5` (fallback `claude-sonnet-5-5`), architect, dev and qa on `claude-sonnet-5-5` (fallback `claude-haiku-5-5`), the same price profile as the OpenAI set. The 64k lead context cap moved to `models.providers.anthropic`; the OpenAI entry stays for switching back. OpenClaw is pinned to 2026.9.9, the first release with Haiku 5.5, and `setup.sh` upgrades an older OpenClaw and the Slack plugin in place. After pulling: fill `ANTHROPIC_API_KEY` and the models in `.env`, `./scripts/setup.sh`, `openclaw sandbox recreate --agent <id>` for every agent, restart the gateway.
 - `minimal-api-feature`, `spec-to-plan` and `pr-review` skills: handler results with more than one outcome are C# 15 unions (`public readonly union FResult(FDto, MissingUser, ...)`), endpoints switch over every case without `_` or `!`, per dopamine-shop `docs/conventions.md`. After pulling: `scripts/sync-skills.sh`. (#31)
 - `dotnet-quality-gate` skill: the format step now enforces dopamine-shop's IDE simplification rules (IDE0046 and others); the skill says which ones `dotnet format` cannot fix and how to fix them by hand. (#31)
