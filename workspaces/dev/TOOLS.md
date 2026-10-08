@@ -1,6 +1,6 @@
 # TOOLS.md — Dev
 
-You work in a Docker sandbox (`agent-team/dotnet-sandbox`): .NET 10 SDK, git, gh, psql, jq, ripgrep.
+You work in a Docker sandbox (`agent-team/dotnet-sandbox`): .NET 11 SDK (preview; .NET 10 SDK also installed), git, gh, psql, jq, ripgrep.
 
 - Working folder: `/workspace`. Clone repositories into `/workspace/repos/`.
 - The commit author is already set by the `GIT_AUTHOR_*` and `GIT_COMMITTER_*` variables (bot `dopamine-dev-bot`, `(dev)` in the author name); do not touch `git config user.*`. The `Agent:` trailer marks the agent in a commit (skill `git-commit`), and the `**[dev]**` prefix marks it in comments (skill `github-issue`).

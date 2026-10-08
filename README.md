@@ -105,10 +105,17 @@ Why not Paperclip: Paperclip connects to OpenClaw 2026.9.8 (the `openclaw_gatewa
 
 ## Admin UI web/admin (stage 5)
 1. `git pull && ./scripts/sync-skills.sh`
-2. Rebuild the sandbox image (it now includes Node 24): `docker build -t agent-team/dotnet-sandbox:10 sandbox/`
+2. Rebuild the sandbox image (it now includes Node 24): `docker build -t agent-team/dotnet-sandbox:11 sandbox/`
 3. Recreate the sandboxes so they pick up the new image: `openclaw sandbox recreate --agent dev`, and the same for `qa` and `architect`.
-4. Check: `docker run --rm agent-team/dotnet-sandbox:10 node --version` shows `v24.x`. Restart the gateway.
+4. Check: `docker run --rm agent-team/dotnet-sandbox:11 node --version` shows `v24.x`. Restart the gateway.
 A UI-only spec may have no `openapi.yaml` of its own: in its "Contract" section it references an existing one (example: `specs/003-admin-ui-edit-user`).
+
+## Moving to .NET 11 (preview)
+dopamine-shop targets .NET 11 RC1 and C# 15 (its ADR 0012), so the sandbox image needs the .NET 11 SDK. The image keeps the .NET 10 SDK too, for branches cut before the move.
+1. `git pull`
+2. Rebuild the image: `docker build --pull -t agent-team/dotnet-sandbox:11 sandbox/` (`--pull` picks up the newest `sdk:11.0`, which follows each RC and then GA).
+3. Check: `docker run --rm agent-team/dotnet-sandbox:11 dotnet --list-sdks` shows `11.0.100-rc.1...` (or later) and `10.0.x`.
+4. Recreate the sandboxes so they use the new tag: `openclaw sandbox recreate --agent <id>` for `lead`, `ba`, `architect`, `dev` and `qa`, then restart the gateway.
 
 ## Moving to stage 3 (ba and architect)
 1. `git pull && ./scripts/sync-skills.sh`
