@@ -8,6 +8,8 @@
 // 3. Dollar limits are per provider (budget.json "providers": each provider is a separate account with its own money)
 //    and count only that provider's calls. A limit counts only while some agent runs on that provider (the
 //    *_MODEL lines in .env): an exhausted Anthropic budget does not stop a team switched to OpenAI.
+//    Token limits (top-level team/agents) are a fallback for calls OpenClaw has no price for: they block only
+//    when the agents they cover made such calls that day.
 //    An active limit is exceeded → `openclaw system heartbeat disable` (the team takes no new tasks
 //    and does not resume stopped ones) and a single Slack message. New day and limits OK → heartbeat back on,
 //    but only if the guard itself disabled it.
@@ -74,6 +76,12 @@ function providerUsage(agentId) {
     const sum = (pred) => rows.filter((r) => r.provider === p && pred(r.date)).reduce((acc, r) => acc + (r.cost ?? 0), 0);
     result[p] = { today: { usd: sum((d) => d === today) }, yesterday: { usd: sum((d) => d === yesterday) }, month: { usd: sum((d) => d.startsWith(month)) } };
   }
+  // Which models today's dollars came from, so a provider split can be checked against the models in .env.
+  models.push(
+    ...rows
+      .filter((r) => r.date === today)
+      .map((r) => ({ agent: agentId, provider: r.provider, model: r.model, usd: round(r.cost ?? 0, "usd"), calls: r.count ?? 0 })),
+  );
   return result;
 }
 
@@ -90,6 +98,7 @@ function activeProviders() {
   return Object.fromEntries(ids.map((id) => [id, env[id] ? [env[id]] : providers]));
 }
 
+const models = [];
 const agents = {};
 for (const id of ids) agents[id] = usage(id);
 const team = {};
@@ -107,11 +116,13 @@ for (const p of new Set([...providers, ...ids.flatMap((id) => Object.keys(agents
 
 // Limits: daily is counted for today, monthly from the start of the month.
 // A check covers agents: team → all of them (or all on its provider), an agent → that agent.
-// active: false → its provider is not in use by the agents it covers; reported, but blocks nothing.
+// active: false → reported, but blocks nothing: a dollar limit whose provider is not in use by the agents it covers,
+// or a token limit while every call of the agents it covers had a price (the dollar limits already hold those).
 const checks = [];
 const collect = (scope, limits, used, provider) => {
   const covers = (scope === "team" ? ids : [scope]).filter((id) => !provider || active[id].includes(provider));
   for (const [period, key] of [["daily", "today"], ["monthly", "month"]]) {
+    const unpriced = covers.some((id) => agents[id][key].missingCost > 0);
     for (const [metric, limit] of Object.entries(limits?.[period] ?? {})) {
       const value = used[key][metric] ?? 0;
       const ratio = limit > 0 ? value / limit : 0;
@@ -126,13 +137,13 @@ const collect = (scope, limits, used, provider) => {
         limit,
         ratio: round(ratio, "ratio"),
         level,
-        active: covers.length > 0,
+        active: covers.length > 0 && (metric !== "tokens" || unpriced),
         covers,
       });
     }
   }
 };
-// Top-level team/agents: provider-independent token limits (a fallback when OpenClaw does not know a model's price).
+// Top-level team/agents: provider-independent token limits, a fallback for calls OpenClaw has no price for.
 collect("team", budget.team, team);
 for (const [id, limits] of Object.entries(budget.agents)) collect(id, limits, agents[id]);
 for (const [p, limits] of Object.entries(budget.providers ?? {})) {
@@ -202,6 +213,7 @@ const snapshot = {
       { team: roundUsd(v.team), agents: Object.fromEntries(Object.entries(v.agents).map(([id, a]) => [id, roundUsd(a)])) },
     ]),
   ),
+  modelsToday: models.toSorted((a, b) => b.usd - a.usd),
   limits: { team: budget.team, agents: budget.agents, providers: budget.providers },
   guard,
 };
@@ -222,7 +234,11 @@ if (report) {
     const usd = (period) => `$${v.team[period].usd.toFixed(2)}`;
     console.log(`${p.padEnd(10)} today ${usd("today").padStart(7)} | yesterday ${usd("yesterday").padStart(7)} | month ${usd("month").padStart(8)}`);
   }
-  for (const c of checks) console.log(describe(c) + (c.active ? "" : " (provider not in use, not blocking)"));
+  for (const m of snapshot.modelsToday) console.log(`  today ${m.agent.padEnd(9)} ${`${m.provider}/${m.model}`.padEnd(32)} $${m.usd.toFixed(2).padStart(6)}  ${m.calls} calls`);
+  for (const c of checks) {
+    const why = c.metric === "tokens" ? "all calls priced" : "provider not in use";
+    console.log(describe(c) + (c.active ? "" : ` (${why}, not blocking)`));
+  }
   if (blocked.length) console.log(`Blocked: ${blocked.join(", ")}`);
   if (team.month.missingCost) console.log(`No price: ${team.month.missingCost} model calls, dollars understated; the tokens limit is the fallback.`);
 } else {

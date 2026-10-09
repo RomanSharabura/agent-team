@@ -47,5 +47,5 @@ Sprint goal: <milestone> — <closed>/<closed+open> issues, due <due_on>   (line
 - Skip empty lines; if nothing happened in the period and nothing is waiting, say in one line that the queue is empty and the team is idle.
 - "≈ $ per PR": yesterday's team spend divided by the number of issues that reached `ai-review` yesterday; none → the line without this part. It is an approximation, so write "≈".
 - Month to date per provider from `providers.<p>.month` against `limits.<p>.monthly`; list only providers with spend this month or in `activeProviders`.
-- `paused: true` or `checks` contains `over` with `active: true` → the first line after the heading: "⛔ Team paused due to budget: <what was exceeded>". An `over` with `active: false` is a provider the team no longer runs on: mention it in the 💸 line ("openai limit exhausted, not in use"), not as a pause.
+- `paused: true` or `checks` contains `over` with `active: true` → the first line after the heading: "⛔ Team paused due to budget: <what was exceeded>". An `over` with `active: false` is a provider the team no longer runs on ("openai limit exhausted, not in use") or a `tokens` limit while every call had a price ("token fallback limit passed, not blocking: all calls priced"): mention it in the 💸 line, not as a pause.
 - Links to issues and PRs — full URLs; Slack makes them clickable.
