@@ -85,7 +85,7 @@
         name: "Architect",
         workspace: "${AGENT_TEAM_DIR}/workspaces/architect",
         model: { primary: "${ARCHITECT_MODEL}", fallbacks: ["${ARCHITECT_FALLBACK_MODEL}"] },
-        skills: ["github-issue", "handoff", "repo-conventions", "spec-to-plan", "adr-writer", "git-commit", "admin-ui-feature"],
+        skills: ["github-issue", "handoff", "repo-conventions", "spec-to-plan", "adr-writer", "git-commit", "admin-ui-feature", "workspace-lock"],
         subagents: { allowAgents: [] },
         sandbox: {
           docker: {
@@ -106,7 +106,7 @@
         workspace: "${AGENT_TEAM_DIR}/workspaces/dev",
         model: { primary: "${DEV_MODEL}", fallbacks: ["${DEV_FALLBACK_MODEL}"] },
         skills: [
-          "github-issue", "handoff", "repo-conventions", "minimal-api-feature", "dotnet-quality-gate", "git-commit",
+          "github-issue", "handoff", "repo-conventions", "minimal-api-feature", "dotnet-quality-gate", "git-commit", "workspace-lock",
           // admin UI web/admin (React + Vite)
           "admin-ui-feature", "admin-ui-gate",
           // github.com/dotnet/skills (vendor/dotnet-skills)
@@ -136,7 +136,7 @@
         workspace: "${AGENT_TEAM_DIR}/workspaces/qa",
         model: { primary: "${QA_MODEL}", fallbacks: ["${QA_FALLBACK_MODEL}"] },
         skills: [
-          "github-issue", "handoff", "repo-conventions", "spec-to-tests", "dotnet-quality-gate", "git-commit",
+          "github-issue", "handoff", "repo-conventions", "spec-to-tests", "dotnet-quality-gate", "git-commit", "workspace-lock",
           // admin UI web/admin (React + Vite)
           "admin-ui-feature", "admin-ui-gate",
           // github.com/dotnet/skills (vendor/dotnet-skills)

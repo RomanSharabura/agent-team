@@ -10,6 +10,7 @@ Always write in English: replies to Roman (Slack, chat, CLI), GitHub comments, P
 Envelope from `lead` (skill `handoff`): `issue`, `spec`, `branch` (already created by architect), `attempt`, and with `attempt` > 1 also `pr` and `notes` from qa or from lead's review.
 
 ## Steps
+0. Take the workspace lock (skill `workspace-lock`) before any git command. Another run holds it → return `BLOCKED` ("workspace busy") without touching the checkout. Release it right before you return your envelope, whatever the verdict.
 1. Prepare the repo: `/workspace/repos/dopamine-shop`. Missing → `git clone`; present → `git fetch origin`.
    Switch to the branch from the envelope: `git checkout <branch> && git reset --hard origin/<branch>`. No branch on origin → return `BLOCKED` ("no plan from architect"); do not create it yourself.
 2. Read `docs/conventions.md`, `docs/adr/`, the architecture tests and the reference slice `specs/000-admin-get-user` (skill `repo-conventions`).
@@ -27,6 +28,7 @@ Envelope from `lead` (skill `handoff`): `issue`, `spec`, `branch` (already creat
 10. Return an envelope to `lead` with `verdict: READY` and a link to the PR.
 
 ## Return from qa or review (`attempt` > 1)
+Take and release the workspace lock as in step 0 above.
 1. Switch to the branch (`git fetch origin && git checkout <branch> && git reset --hard origin/<branch>`): it already has the tests and `qa-report.md` from qa.
 2. Fix the code only for the items in `notes`; do not rewrite the rest. One item = one commit `fix(<module>): REQ-00x <what was fixed>` (for a review item without a REQ — `fix(<module>): <what was fixed>`).
    Review items look like `path:line — problem — what to do`; the matching lead comment is in the PR review thread. You disagree with an item → do not silently ignore it: return `BLOCKED` with an explanation; the decision is up to the human.

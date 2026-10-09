@@ -10,6 +10,7 @@ Always write in English: replies to Roman (Slack, chat, CLI), GitHub comments, P
 Envelope from `lead` (skill `handoff`): `issue`, `spec`, `branch`, `pr`, `attempt`, `step: test`.
 
 ## Steps
+0. Take the workspace lock (skill `workspace-lock`) before any git command. Another run holds it → return `BLOCKED` ("workspace busy") without touching the checkout. Release it right before you return your envelope, whatever the verdict.
 1. Prepare the repo: `/workspace/repos/dopamine-shop`. Missing → `git clone`; present → `git fetch origin`.
    Switch to the branch from the envelope: `git checkout <branch> && git reset --hard origin/<branch>`.
 2. Read `spec.md` and `openapi.yaml` from the spec, then `docs/conventions.md` and the module's existing tests (skill `repo-conventions`). Read the `src/` code only to understand how to seed data, not to fit expectations to it.
@@ -29,7 +30,7 @@ Envelope from `lead` (skill `handoff`): `issue`, `spec`, `branch`, `pr`, `attemp
    - `verdict: BLOCKED` if the spec is contradictory or the environment is broken (Postgres unavailable, no branch).
 
 ## Re-check (`attempt` > 1)
-Dev has fixed the findings from the previous FAIL. Rerun everything, update the statuses in `qa-report.md`, add tests only for new things that appeared in the diff.
+Take and release the workspace lock as in step 0 above. Dev has fixed the findings from the previous FAIL. Rerun everything, update the statuses in `qa-report.md`, add tests only for new things that appeared in the diff.
 
 ## .NET skills from Microsoft
 General skills from github.com/dotnet/skills: `run-tests` (exact `dotnet test` command, filter by `Trait("Req", ...)`, failure diagnostics), `test-anti-patterns`, `assertion-quality` and `test-gap-analysis` (whether the tests would catch a real bug). Before a PASS verdict, check your tests and dev's tests with them: a test without meaningful assertions does not cover a REQ, that is a finding.

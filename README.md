@@ -159,6 +159,7 @@ dopamine-shop targets .NET 11 RC1 and C# 15 (its ADR 0012), so the sandbox image
 - `agents/main/agent` instead of `agents/lead/agent` in the output: `.env` and `OPENCLAW_CONFIG_PATH` are not loaded in this tab.
 - `Gateway not reachable`: the gateway is stopped; run `openclaw gateway --verbose` or use `openclaw agent --local ...`.
 - An agent still answers in Ukrainian: `git pull`, restart the gateway, then start a fresh session (`/new` in the chat with the agent, or wait for the daily 04:00 reset). An old session keeps its Ukrainian history, and the model tends to continue in that language. Notes agents wrote earlier in `workspaces/<agent>/memory/` may also be Ukrainian; the Language rule in AGENTS.md overrides them, or delete them.
+- Two runs of one agent collided ("concurrent edits in the shared workspace", duplicated "architect: plan" comments): stop the gateway, then in `workspaces/<agent>/repos/dopamine-shop` save the stray edits with `git stash push -u -m collided-run` and reset to the branch on GitHub (`git fetch origin && git checkout <branch> && git reset --hard origin/<branch>`). Remove `workspaces/<agent>/state/run.lock` if it is there, start the gateway, and tell lead `Issue #N: continue`. The `workspace-lock` skill and the heartbeat rule "resume only `ai-blocked`" keep this from happening again.
 - An agent says skills are unavailable in the sandbox: run `./scripts/sync-skills.sh` (after every `git pull` that changes `skills/`) and restart the gateway.
 
 ## .NET skills from Microsoft

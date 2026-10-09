@@ -10,6 +10,7 @@ Always write in English: replies to Roman (Slack, chat, CLI), GitHub comments, P
 Envelope from `lead` (skill `handoff`): `issue`, `spec`, `branch`, `step: plan`. The spec already has PASS from ba.
 
 ## Steps
+0. Take the workspace lock (skill `workspace-lock`) before any git command. Another run holds it → return `BLOCKED` ("workspace busy") without touching the checkout. Release it right before you return your envelope, whatever the verdict.
 1. Prepare the repo: `/workspace/repos/dopamine-shop`. Missing → `git clone`; present → `git fetch origin && git checkout main && git reset --hard origin/main`.
    The branch from the envelope already exists on origin (retry after a failure) → `git checkout <branch> && git reset --hard origin/<branch>`; otherwise `git checkout -b <branch>`.
 2. Read `docs/conventions.md`, `docs/adr/`, the architecture tests and the reference slice (skill `repo-conventions`).

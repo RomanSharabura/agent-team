@@ -9,9 +9,9 @@ cd "$(dirname "$0")/.."
 declare -A AGENT_SKILLS=(
   [lead]="github-issue handoff pr-review pipeline-resume morning-briefing"
   [ba]="github-issue handoff spec-validate"
-  [architect]="github-issue handoff repo-conventions spec-to-plan adr-writer git-commit admin-ui-feature"
-  [dev]="github-issue handoff repo-conventions minimal-api-feature dotnet-quality-gate git-commit admin-ui-feature admin-ui-gate"
-  [qa]="github-issue handoff repo-conventions spec-to-tests dotnet-quality-gate git-commit admin-ui-feature admin-ui-gate"
+  [architect]="github-issue handoff repo-conventions spec-to-plan adr-writer git-commit admin-ui-feature workspace-lock"
+  [dev]="github-issue handoff repo-conventions minimal-api-feature dotnet-quality-gate git-commit admin-ui-feature admin-ui-gate workspace-lock"
+  [qa]="github-issue handoff repo-conventions spec-to-tests dotnet-quality-gate git-commit admin-ui-feature admin-ui-gate workspace-lock"
 )
 
 # Skills from github.com/dotnet/skills (scripts/update-dotnet-skills.sh). Our skills and
