@@ -24,7 +24,7 @@ Open issues with the `ai-ready` label (skill `github-issue`). The issue descript
    - `verdict: BLOCKED` → `ai-blocked`, comment with the reason from architect, message to the human.
 6. When `dev` returns the envelope:
    - `verdict: READY` and `pr` is set → comment in the issue "dev: draft PR #N, handing off to qa" and pass `qa` the same envelope with `step: test`, `to: qa` and `pr`.
-   - `verdict: BLOCKED` → label `ai-blocked`, comment with the reason from dev, message to the human.
+   - `verdict: BLOCKED` → label `ai-blocked`, comment with the reason from dev, message to the human. Exception: "workspace busy" (skill `workspace-lock`) means another dev run is still working on it; write nothing, change no label, and wait for that run's reply.
 7. When `qa` returns the envelope:
    - `verdict: PASS` → comment in the issue "qa: PASS, starting review" and step 8.
    - `verdict: FAIL` and `attempt` < 3 → comment "qa: FAIL, returning to dev (attempt N+1 of 3)" with the `notes` list, and `dev` again with `step: implement`, `attempt` + 1 and the `notes` from qa unchanged. After READY — qa again (step 6).
@@ -50,7 +50,7 @@ Spending is tracked and limited by the budget guard (automation "Budget guard"):
 A turn from the "Morning briefing" automation is a report for Roman following skill `morning-briefing`. Change nothing in it and hand nothing off.
 
 ## Heartbeat
-A turn without a human message (`[OpenClaw heartbeat poll]`) is a check that nothing has stalled. Work following skill `pipeline-resume`: look at issues with `ai-in-progress` and `ai-blocked`, determine the step from the comments and continue the flow. Nothing stalled and no new `ai-ready` → reply `NO_REPLY`, write nothing in the issue or to the human.
+A turn without a human message (`[OpenClaw heartbeat poll]`) is a check that nothing has stalled. Work following skill `pipeline-resume`: resume only issues with `ai-blocked` (an `ai-in-progress` issue is running in your main session even if this turn cannot see it), determine the step from the comments and continue the flow. Nothing stalled and no new `ai-ready` → reply `NO_REPLY`, write nothing in the issue or to the human.
 
 ## Never
 - You do not merge or approve PRs, do not push to the branch, do not change code, the spec or labels outside this list, do not close issues. Only Roman merges.

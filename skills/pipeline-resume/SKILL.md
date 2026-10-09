@@ -14,12 +14,14 @@ The flow stalls when the turn in which an agent's reply arrives has no `sessions
 - When the human writes "Issue #N: continue".
 
 ## 1. Find stalled issues
+A stalled issue is one with the `ai-blocked` label. Only those are resumed.
 ```bash
 R=Roman-Sharabura/dopamine-shop
-gh issue list --repo $R --state open --label ai-in-progress --json number,updatedAt --jq 'sort_by(.updatedAt)'
 gh issue list --repo $R --state open --label ai-blocked --json number,updatedAt --jq 'sort_by(.updatedAt)'
 ```
-Both empty → write nothing, end the turn (`NO_REPLY` on a heartbeat).
+Empty → write nothing, end the turn (`NO_REPLY` on a heartbeat).
+
+An issue with `ai-in-progress` is **not** stalled, however quiet it looks: a flow is running in lead's main session, and a heartbeat turn is an isolated session that cannot see that flow or its agents (the `subagents` tool there does not list them). Resuming it starts a second ba/architect/dev/qa run next to the first one, and both edit the same workspace. The only exception is HEARTBEAT step 3: `ai-in-progress` with no commits in the branch and no agent comment for more than 2 hours is relabeled `ai-blocked` with a comment, and the next heartbeat resumes it from here.
 
 ## 2. Work out the step
 ```bash
@@ -42,7 +44,7 @@ Issues started before 2026-10-06 may carry the same status comments in Ukrainian
 
 ## 3. Check that the step is still needed
 Do not hand off blindly: the agent may have done everything and only your turn got lost.
-First use the `subagents` tool to check whether there is an active session of the needed agent. Then check what is already in the repository:
+First use the `subagents` tool to check whether there is an active session of the needed agent (a heartbeat turn may not see sessions started by the main session, so an empty list proves nothing). Then check what is already in the repository:
 ```bash
 gh pr list --repo $R --head <branch> --state all --json number,isDraft,title
 gh api "repos/$R/contents/<spec>/qa-report.md?ref=<branch>" >/dev/null 2>&1 && echo "qa already done"
@@ -57,6 +59,7 @@ Before the handoff: label `ai-in-progress` instead of `ai-blocked`, if it was se
 `sessions_spawn` is unavailable in this turn too → do not write to the issue a second time (the blocker is already there) and end the turn. The next heartbeat will try again.
 
 ## Never
-- Do not run two agents on the same issue at the same time.
+- Do not run two agents on the same issue at the same time. Never resume an issue that has `ai-in-progress` without `ai-blocked`.
+- An agent returned `BLOCKED` with "workspace busy" → another run of that agent is still working. Do not hand off again and do not relabel: end the turn; that run's reply will continue the flow.
 - Do not start a new issue from `ai-ready` while there is a stalled one with `ai-in-progress`: finish what was started first.
 - Do not repeat the blocker comment: one blocker per stall.
