@@ -7,6 +7,9 @@ Commits: subject ≤ 72 characters and a body with a list of changes (template `
 
 ## [Unreleased]
 
+### Fixed
+- Budget guard no longer crashes when the gateway is slow: on 2026-10-12 `sessions.usage` hit the CLI's default 10 s timeout while agents were busy, and lead posted the Node stack trace to Slack. Gateway calls now wait up to 45 s with one retry; if usage still cannot be read, the guard changes nothing (heartbeat and last snapshot stay) and says so in Slack once after 3 failed runs in a row, and once when it reads usage again. After pulling: nothing to do. (#36)
+
 ### Changed
 - Commit subjects stay within 72 characters: the `git-commit` skill makes it a hard rule with a length check before every commit and at most two REQ IDs or one range in the subject, and dev's AGENTS.md repeats it. On dopamine-shop #77 a 79-character subject turned the `commit messages` check red, and a pushed subject cannot be fixed without rewriting history. After pulling: `scripts/sync-skills.sh`.
 - Budget guard: the provider-independent token limits (`team`/`agents` `tokens` in `budget.json`) now block only on a day when the agents they cover made calls OpenClaw has no price for, as `budget.json` and the README already described. Before, they always counted, and on 2026-10-09 the lead's 22.75M tokens ($3.64) passed its 4M token limit and the team's 25.13M passed 25M, pausing the whole team while every dollar limit was within bounds. The snapshot gets `modelsToday` (dollars per agent, provider and model) and `--report` prints it, so the provider split can be checked against the models in `.env`. After pulling: nothing to do, the next guard run applies it.
