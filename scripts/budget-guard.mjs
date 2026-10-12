@@ -24,6 +24,9 @@ const report = process.argv.includes("--report");
 const budget = JSON.parse(readFileSync(join(root, "budget.json"), "utf8"));
 const statePath = join(root, "workspaces/lead/state/budget.json");
 const openclaw = process.env.OPENCLAW_BIN || "openclaw";
+const GATEWAY_TIMEOUT_MS = 45000;
+// Runs in a row (10 minutes apart) without usage before the guard says so in Slack: one slow run stays silent.
+const FAILURES_BEFORE_ALERT = 3;
 
 const now = new Date();
 const today = now.toISOString().slice(0, 10);
@@ -47,12 +50,7 @@ const add = (acc, d) => {
 };
 
 function usage(agentId) {
-  const out = execFileSync(openclaw, ["gateway", "usage-cost", "--agent", agentId, "--days", String(days), "--json"], {
-    encoding: "utf8",
-    timeout: 60000,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  const summary = JSON.parse(out);
+  const summary = gateway(["usage-cost", "--agent", agentId, "--days", String(days)]);
   const byDate = (pred) => summary.daily.filter((d) => pred(d.date)).reduce(add, zero());
   return {
     today: byDate((d) => d === today),
@@ -65,12 +63,7 @@ function usage(agentId) {
 // Dollars per provider: aggregates.modelDaily = [{date, provider, model, tokens, cost, count}], UTC days.
 function providerUsage(agentId) {
   const params = { agentId, startDate: since, endDate: today, mode: "utc", limit: 1 };
-  const out = execFileSync(openclaw, ["gateway", "call", "sessions.usage", "--json", "--params", JSON.stringify(params)], {
-    encoding: "utf8",
-    timeout: 60000,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  const rows = JSON.parse(out).aggregates?.modelDaily ?? [];
+  const rows = gateway(["call", "sessions.usage", "--params", JSON.stringify(params)]).aggregates?.modelDaily ?? [];
   const result = {};
   for (const p of new Set([...providers, ...rows.map((r) => r.provider)])) {
     const sum = (pred) => rows.filter((r) => r.provider === p && pred(r.date)).reduce((acc, r) => acc + (r.cost ?? 0), 0);
@@ -98,9 +91,36 @@ function activeProviders() {
   return Object.fromEntries(ids.map((id) => [id, env[id] ? [env[id]] : providers]));
 }
 
+// A gateway read, with a longer RPC timeout than the CLI default (10 s): sessions.usage scans every session log and
+// can take longer while agents are running. One retry, then the error goes to unavailable() below.
+function gateway(args) {
+  const run = () =>
+    JSON.parse(
+      execFileSync(openclaw, ["gateway", ...args, "--json", "--timeout", String(GATEWAY_TIMEOUT_MS)], {
+        encoding: "utf8",
+        timeout: GATEWAY_TIMEOUT_MS + 15000,
+        stdio: ["ignore", "pipe", "pipe"],
+      }),
+    );
+  try {
+    return run();
+  } catch {
+    return run();
+  }
+}
+
+let prev = {};
+try {
+  prev = JSON.parse(readFileSync(statePath, "utf8"));
+} catch {}
+
 const models = [];
 const agents = {};
-for (const id of ids) agents[id] = usage(id);
+try {
+  for (const id of ids) agents[id] = usage(id);
+} catch (error) {
+  unavailable(error);
+}
 const team = {};
 for (const period of ["today", "yesterday", "month"]) {
   team[period] = Object.values(agents).map((a) => a[period]).reduce(add, zero());
@@ -156,15 +176,13 @@ const status = over.length ? "over" : checks.some((c) => c.active) ? "warn" : "o
 // Agents lead must not hand off to: covered by an exceeded limit of the provider they run on.
 const blocked = ids.filter((id) => over.some((c) => c.covers.includes(id)));
 
-let prev = {};
-try {
-  prev = JSON.parse(readFileSync(statePath, "utf8"));
-} catch {}
 const guard = { pausedByGuard: false, pausedOn: null, alerted: { date: today, keys: [] }, ...prev.guard };
+delete guard.failures;
 if (guard.alerted.date !== today) guard.alerted = { date: today, keys: [] };
 
 const messages = [];
 if (!report) {
+  if (prev.guard?.failures?.alerted) messages.push("✅ Budget guard reads usage from the gateway again.");
   if (over.length) {
     // Repeat every time: the guard does not know whether the heartbeat disable survived a gateway restart.
     heartbeat("disable");
@@ -245,6 +263,38 @@ if (report) {
   console.log(messages.length ? messages.join("\n\n") : "NO_REPLY");
 }
 
+// Usage could not be read (gateway busy, restarting or down). Nothing is decided on missing numbers: the heartbeat
+// stays as it is and the last snapshot stays for lead, with only guard.failures updated. The automation gets
+// NO_REPLY until FAILURES_BEFORE_ALERT runs in a row failed, then one message per streak.
+function unavailable(error) {
+  const reason = gatewayError(error);
+  if (report) {
+    console.error(`Could not read usage from the gateway: ${reason}`);
+    process.exit(1);
+  }
+  const guard = { ...prev.guard };
+  const failures = { count: (guard.failures?.count ?? 0) + 1, since: guard.failures?.since ?? now.toISOString(), reason, alerted: guard.failures?.alerted ?? false };
+  let message = "NO_REPLY";
+  if (failures.count >= FAILURES_BEFORE_ALERT && !failures.alerted) {
+    failures.alerted = true;
+    message =
+      `⚠️ Budget guard cannot read usage from the gateway since ${failures.since} (${failures.count} runs): ${reason}\n` +
+      `Nothing changed: the heartbeat stays ${guard.pausedByGuard ? "disabled" : "as it is"} and lead sees the snapshot from ${prev.updatedAt ?? "never"}. ` +
+      "Check that the gateway is up (`openclaw gateway status`); the guard recovers by itself on its next good run.";
+  }
+  mkdirSync(dirname(statePath), { recursive: true });
+  writeFileSync(`${statePath}.tmp`, JSON.stringify({ ...prev, guard: { ...guard, failures } }, null, 2) + "\n");
+  renameSync(`${statePath}.tmp`, statePath);
+  console.log(message);
+  process.exit(0);
+}
+function gatewayError(error) {
+  try {
+    const body = JSON.parse(error.stdout);
+    if (body?.error?.message) return body.error.message;
+  } catch {}
+  return error.code === "ETIMEDOUT" ? `no answer within ${GATEWAY_TIMEOUT_MS + 15000} ms` : String(error.stderr || error.message).trim().split("\n")[0];
+}
 function heartbeat(action) {
   execFileSync(openclaw, ["system", "heartbeat", action, "--json"], { stdio: "ignore", timeout: 60000 });
 }
