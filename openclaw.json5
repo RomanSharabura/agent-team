@@ -14,11 +14,11 @@
     providers: {
       anthropic: {
         agentRuntime: { id: "openclaw" },
-        // Active context limit for the lead model (default: the full 1M window). Without it the lead main session
-        // with Slack conversations and all handoffs grows to hundreds of thousands of tokens, and every tool
-        // call sends it in full. At 64k OpenClaw compacts history earlier, and Haiku 5.5 stays in its
-        // cheap price tier (prompts up to 100k tokens). The same entry applies to ba on Haiku.
-        // OpenClaw takes the model price and window from the catalog. Changed LEAD_MODEL → change the id here.
+        // Active context limit for Haiku 5.5, lead's and ba's fallback (default: the full 1M window). At 64k OpenClaw
+        // compacts history earlier, and Haiku stays in its cheap price tier (prompts up to 100k tokens).
+        // The limit is per model id, not per agent: lead ran on Haiku until 2026-10-13, and on Sonnet it runs with the
+        // full window (a Sonnet entry would also cap ba and the fallback of architect, dev and qa). README "Lead context".
+        // OpenClaw takes the model price and window from the catalog.
         models: [{ id: "claude-haiku-5-5", name: "Claude Haiku 5.5", contextTokens: 64000 }],
       },
       // Kept for switching back to OpenAI (see .env.example): same 64k cap for gpt-6-luna.

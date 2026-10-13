@@ -84,16 +84,17 @@ The team runs on one provider at a time, Anthropic by default; both sets are in 
 
 | Agent | Anthropic | OpenAI | Anthropic $/1M in/out |
 |---|---|---|---|
-| lead | `claude-haiku-5-5` (fb `claude-sonnet-5-5`) | `gpt-6-luna` (fb `gpt-5.6-luna`) | 0.10 / 0.50 |
-| ba, dev, qa | `claude-sonnet-5-5` (fb `claude-haiku-5-5`) | `gpt-6.1-sol` (fb `gpt-6-sol`; ba `gpt-6.1-sol`) | 2 / 10 |
+| lead | `claude-sonnet-5-5` (fb `claude-haiku-5-5`) | `gpt-6-luna` (fb `gpt-5.6-luna`) | 2 / 10 |
+| ba | `claude-sonnet-5-5` (fb `claude-haiku-5-5`) | `gpt-6.1-sol` (fb `gpt-6.1-sol`) | 2 / 10 |
+| dev, qa | `claude-opus-5-5` (fb `claude-sonnet-5-5`) | `gpt-6.1-sol` (fb `gpt-6-sol`) | 4 / 20 |
 | architect | `claude-opus-5-5` (fb `claude-sonnet-5-5`) | `gpt-6-astra` (fb `gpt-6.1-sol`) | 4 / 20 |
 
-Lead mostly orchestrates and reviews against a checklist; if its reviews get shallow, move `LEAD_MODEL` to Sonnet first. The fallback only fires on a rate limit or an outage, so a cheap one is fine.
+Since 2026-10-13 the Anthropic set is a tier above the OpenAI one: lead reviews code and ba validates specs on Sonnet, and the agents that write code and tests are on Opus. The fallback only fires on a rate limit or an outage, so a cheaper one is fine. On the API key this roughly doubles dev and qa spend per token; on the Claude subscription it uses the plan's limits faster.
 
 Notes:
 - **OpenClaw 2026.9.9 or newer is required.** 2026.9.8 doesn't know Claude Haiku 5.5 (no price, no thinking settings).
 - **Fallback model.** Each agent has `model: { primary, fallbacks }` (the `*_FALLBACK_MODEL` variables). Anthropic counts rate limits separately per model class, so on a 429 OpenClaw, after a short retry, switches to the fallback instead of aborting the turn.
-- **Lead context.** The lead main session (Slack and all handoffs) used to grow without bound: every tool call sent it in full, hence ~59k tokens per request (on OpenAI it hit 200k TPM). Now sessions restart daily at 04:00 (`session.reset`), and the lead model has a 64k active context limit (`models.providers.anthropic.models`), after which OpenClaw compacts the history. That also keeps Haiku 5.5 under 100k-token prompts, where its price is 5x lower. If you change `LEAD_MODEL`, change the `id` in that entry too.
+- **Lead context.** The lead main session (Slack and all handoffs) used to grow without bound: every tool call sent it in full, hence ~59k tokens per request (on OpenAI it hit 200k TPM). Now sessions restart daily at 04:00 (`session.reset`), and Haiku 5.5 has a 64k active context limit (`models.providers.anthropic.models`), after which OpenClaw compacts the history. The limit is per model id, not per agent, so lead on Sonnet 5.5 runs with the full window: a Sonnet entry would also cap ba and the Sonnet fallback of architect, dev and qa. Only the daily reset keeps lead's session small now; if lead's requests grow large, add `{ id: "claude-sonnet-5-5", name: "Claude Sonnet 5.5", contextTokens: 200000 }` there.
 - **Prompt caching.** OpenClaw turns on Anthropic's 5-minute prompt cache by itself for the direct API; cache reads cost a tenth of input.
 - **Switching models.** Presets live in [`models/`](models): `anthropic.env` (the default), `openai.env` (the OpenAI column above) and `claude-subscription.env` (the Anthropic models on your Claude plan, see below). Switch with one command, for the whole team or for some agents:
   ```bash

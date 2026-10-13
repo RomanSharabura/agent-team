@@ -7,6 +7,9 @@ Commits: subject ≤ 72 characters and a body with a list of changes (template `
 
 ## [Unreleased]
 
+### Changed
+- Stronger Anthropic models (Roman, 2026-10-13), in the `anthropic` and `claude-subscription` presets and `.env.example`: lead and ba on `claude-sonnet-5-5` (fallback `claude-haiku-5-5`), architect, dev and qa on `claude-opus-5-5` (fallback `claude-sonnet-5-5`). Lead's 64k context limit was tied to Haiku, so lead on Sonnet now runs with the full window and only the daily reset keeps its session small. On the API key dev and qa cost about twice as much per token, so their daily dollar limits in `budget.json` are reached sooner. After pulling: `./scripts/use-models.sh <anthropic|claude-subscription>`, restart the gateway.
+
 ### Added
 - Third way to pay for the team: `./scripts/use-models.sh claude-subscription` runs the Anthropic models on Roman's Claude Pro/Max/Team plan with a setup token (`claude setup-token` → `ANTHROPIC_SETUP_TOKEN` in `.env`) instead of the API key. Each agent keeps the API key and the token as separate auth profiles, and every preset now sets the agent's auth order to exactly one of them, so switching between OpenAI API, Anthropic API and the subscription is one command and a gateway restart, with no new sign-in and no silent fallback to the paid key. The preset writes `<AGENT>_AUTH` to `.env`; the budget guard skips dollar limits for subscription agents (their cost is only an API-price estimate) and applies the token limits to them instead, and the morning briefing reports their tokens rather than dollars. `setup.sh` accepts a `.env` with only the setup token. After pulling: `scripts/sync-skills.sh`; for the subscription, the one-time setup in README "Three ways to pay".
 
