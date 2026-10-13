@@ -81,7 +81,8 @@ fi
 echo "== Model keys into agent auth profiles"
 # OpenClaw takes the agents' key not from an environment variable but from each agent's auth profile.
 # paste-api-key rewrites the config, so give it a temporary copy to leave openclaw.json5 untouched.
-[[ -n "${OPENAI_API_KEY:-}${ANTHROPIC_API_KEY:-}" ]] || { echo "Neither OPENAI_API_KEY nor ANTHROPIC_API_KEY is set in .env"; exit 1; }
+# Subscription only (no API key): use-models.sh claude-subscription puts the setup token in instead.
+[[ -n "${OPENAI_API_KEY:-}${ANTHROPIC_API_KEY:-}${ANTHROPIC_SETUP_TOKEN:-}" ]] || { echo "Set OPENAI_API_KEY, ANTHROPIC_API_KEY or ANTHROPIC_SETUP_TOKEN in .env"; exit 1; }
 tmpdir="$(mktemp -d)"
 cp openclaw.json5 "$tmpdir/openclaw.json5"
 for agent in lead ba architect dev qa; do

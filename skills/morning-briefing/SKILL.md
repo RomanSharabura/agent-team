@@ -30,7 +30,7 @@ Take the step for each in-progress issue from the last signed comment (`gh issue
 
 Spend — from the budget guard snapshot; do not calculate anything yourself:
 ```bash
-jq '{updatedAt, status, paused, blocked, activeProviders, checks, team, agents: (.agents | map_values({today, yesterday})), providers: (.providers | map_values(.team)), limits: (.limits.providers | map_values(.team))}' /workspace/state/budget.json
+jq '{updatedAt, status, paused, blocked, activeProviders, subscription, checks, team, agents: (.agents | map_values({today, yesterday})), providers: (.providers | map_values(.team)), limits: (.limits.providers | map_values(.team))}' /workspace/state/budget.json
 ```
 No file or `updatedAt` older than an hour → line "Spend tracking has not updated since …, check the Budget guard automation".
 
@@ -48,4 +48,5 @@ Sprint goal: <milestone> — <closed>/<closed+open> issues, due <due_on>   (line
 - "≈ $ per PR": yesterday's team spend divided by the number of issues that reached `ai-review` yesterday; none → the line without this part. It is an approximation, so write "≈".
 - Month to date per provider from `providers.<p>.month` against `limits.<p>.monthly`; list only providers with spend this month or in `activeProviders`.
 - `paused: true` or `checks` contains `over` with `active: true` → the first line after the heading: "⛔ Team paused due to budget: <what was exceeded>". An `over` with `active: false` is a provider the team no longer runs on ("openai limit exhausted, not in use") or a `tokens` limit while every call had a price ("token fallback limit passed, not blocking: all calls priced"): mention it in the 💸 line, not as a pause.
+- `subscription` lists agents on Roman's Claude subscription: their `agents.<id>` dollars are only what the API would have charged, not a bill (`providers.<p>.team` already leaves them out). Leave them out of the per-agent dollars and the "≈ $ per PR" part, and add "on the Claude subscription: <agent> <yesterday's tokens> tok, …" from `agents.<id>.yesterday.tokens`. Whole team on the subscription → the 💸 line shows only that.
 - Links to issues and PRs — full URLs; Slack makes them clickable.

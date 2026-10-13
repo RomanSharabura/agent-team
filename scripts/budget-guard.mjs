@@ -10,6 +10,9 @@
 //    *_MODEL lines in .env): an exhausted Anthropic budget does not stop a team switched to OpenAI.
 //    Token limits (top-level team/agents) are a fallback for calls OpenClaw has no price for: they block only
 //    when the agents they cover made such calls that day.
+//    Agents on a Claude subscription (<AGENT>_AUTH=subscription in .env, scripts/use-models.sh) pay no per-token bill:
+//    their provider's dollar limits skip them (OpenClaw still prices their calls, as if billed by the API), and the
+//    token limits always count for them instead, so the team cannot drain the plan's shared weekly limit unnoticed.
 //    An active limit is exceeded → `openclaw system heartbeat disable` (the team takes no new tasks
 //    and does not resume stopped ones) and a single Slack message. New day and limits OK → heartbeat back on,
 //    but only if the guard itself disabled it.
@@ -38,7 +41,7 @@ const days = Math.max(now.getUTCDate(), 2);
 const since = days > now.getUTCDate() ? yesterday : `${month}-01`;
 const ids = Object.keys(budget.agents);
 const providers = Object.keys(budget.providers ?? {});
-const active = activeProviders();
+const { active, subscription } = activeProviders();
 
 const zero = () => ({ usd: 0, tokens: 0, cacheRead: 0, missingCost: 0 });
 const add = (acc, d) => {
@@ -80,15 +83,22 @@ function providerUsage(agentId) {
 
 // Provider each agent runs on now: the provider/ prefix of its *_MODEL in .env (the gateway reads it at start).
 // No .env or no line → that agent counts against every provider.
+// subscription: agents whose *_AUTH in .env is "subscription" (no line → API key).
 function activeProviders() {
-  let env = {};
+  const env = {};
+  const auth = {};
   try {
     for (const line of readFileSync(join(root, ".env"), "utf8").split("\n")) {
       const m = line.match(/^([A-Z_]+)_MODEL=["']?([^/"'\s]+)\//);
       if (m) env[m[1].toLowerCase()] = m[2];
+      const a = line.match(/^([A-Z_]+)_AUTH=["']?([a-z-]+)/);
+      if (a) auth[a[1].toLowerCase()] = a[2];
     }
   } catch {}
-  return Object.fromEntries(ids.map((id) => [id, env[id] ? [env[id]] : providers]));
+  return {
+    active: Object.fromEntries(ids.map((id) => [id, env[id] ? [env[id]] : providers])),
+    subscription: ids.filter((id) => auth[id] === "subscription"),
+  };
 }
 
 // A gateway read, with a longer RPC timeout than the CLI default (10 s): sessions.usage scans every session log and
@@ -123,26 +133,35 @@ try {
 }
 const team = {};
 for (const period of ["today", "yesterday", "month"]) {
-  team[period] = Object.values(agents).map((a) => a[period]).reduce(add, zero());
+  // Dollars of agents on a subscription are not a bill: the team total counts only their tokens.
+  team[period] = Object.entries(agents)
+    .map(([id, a]) => (subscription.includes(id) ? { ...a[period], usd: 0 } : a[period]))
+    .reduce(add, zero());
 }
 // The same per provider: byProvider[provider].team / .agents[id], each {today, yesterday, month} with usd.
+// The team sum leaves out agents on a subscription: their dollars are an API-price estimate, not a bill. The guard
+// knows only today's mode, so after a switch the whole period counts as the agent's current mode.
 const byProvider = {};
 for (const p of new Set([...providers, ...ids.flatMap((id) => Object.keys(agents[id].providers))])) {
   const per = Object.fromEntries(ids.map((id) => [id, agents[id].providers[p] ?? { today: { usd: 0 }, yesterday: { usd: 0 }, month: { usd: 0 } }]));
+  const billed = ids.filter((id) => !subscription.includes(id)).map((id) => per[id]);
   const teamUsd = {};
-  for (const period of ["today", "yesterday", "month"]) teamUsd[period] = { usd: Object.values(per).reduce((acc, a) => acc + a[period].usd, 0) };
+  for (const period of ["today", "yesterday", "month"]) teamUsd[period] = { usd: billed.reduce((acc, a) => acc + a[period].usd, 0) };
   byProvider[p] = { team: teamUsd, agents: per };
 }
 
 // Limits: daily is counted for today, monthly from the start of the month.
 // A check covers agents: team → all of them (or all on its provider), an agent → that agent.
-// active: false → reported, but blocks nothing: a dollar limit whose provider is not in use by the agents it covers,
-// or a token limit while every call of the agents it covers had a price (the dollar limits already hold those).
+// active: false → reported, but blocks nothing: a dollar limit whose provider is not in use by the agents it covers
+// (or they run on a subscription), or a token limit while every call of the agents it covers had a price (the dollar
+// limits already hold those) and none of them runs on a subscription.
 const checks = [];
 const collect = (scope, limits, used, provider) => {
-  const covers = (scope === "team" ? ids : [scope]).filter((id) => !provider || active[id].includes(provider));
+  const covers = (scope === "team" ? ids : [scope]).filter(
+    (id) => !provider || (active[id].includes(provider) && !subscription.includes(id)),
+  );
   for (const [period, key] of [["daily", "today"], ["monthly", "month"]]) {
-    const unpriced = covers.some((id) => agents[id][key].missingCost > 0);
+    const countTokens = covers.some((id) => agents[id][key].missingCost > 0 || subscription.includes(id));
     for (const [metric, limit] of Object.entries(limits?.[period] ?? {})) {
       const value = used[key][metric] ?? 0;
       const ratio = limit > 0 ? value / limit : 0;
@@ -157,7 +176,7 @@ const collect = (scope, limits, used, provider) => {
         limit,
         ratio: round(ratio, "ratio"),
         level,
-        active: covers.length > 0 && (metric !== "tokens" || unpriced),
+        active: covers.length > 0 && (metric !== "tokens" || countTokens),
         covers,
       });
     }
@@ -221,6 +240,7 @@ const snapshot = {
   paused: guard.pausedByGuard,
   blocked,
   activeProviders: active,
+  subscription,
   warnAt: budget.warnAt,
   checks,
   team: roundAll(team),
@@ -246,7 +266,7 @@ if (report) {
     `${name.padEnd(10)} today $${a.today.usd.toFixed(2).padStart(6)} ${mtok(a.today.tokens).padStart(7)}` +
     ` | yesterday $${a.yesterday.usd.toFixed(2).padStart(6)} | month $${a.month.usd.toFixed(2).padStart(7)}`;
   console.log(`Spend for ${today} (UTC), status: ${status}${guard.pausedByGuard ? ", heartbeat disabled by guard" : ""}`);
-  for (const [id, a] of Object.entries(agents)) console.log(row(id, a) + `  [${active[id].join(", ")}]`);
+  for (const [id, a] of Object.entries(agents)) console.log(row(id, a) + `  [${active[id].join(", ")}${subscription.includes(id) ? " subscription" : ""}]`);
   console.log(row("team", team));
   for (const [p, v] of Object.entries(byProvider)) {
     const usd = (period) => `$${v.team[period].usd.toFixed(2)}`;
@@ -254,9 +274,10 @@ if (report) {
   }
   for (const m of snapshot.modelsToday) console.log(`  today ${m.agent.padEnd(9)} ${`${m.provider}/${m.model}`.padEnd(32)} $${m.usd.toFixed(2).padStart(6)}  ${m.calls} calls`);
   for (const c of checks) {
-    const why = c.metric === "tokens" ? "all calls priced" : "provider not in use";
+    const why = c.metric === "tokens" ? "all calls priced" : "provider not in use or on a subscription";
     console.log(describe(c) + (c.active ? "" : ` (${why}, not blocking)`));
   }
+  if (subscription.length) console.log(`On a subscription: ${subscription.join(", ")}. Their dollars are what the API would have charged, not a bill; their token limits apply.`);
   if (blocked.length) console.log(`Blocked: ${blocked.join(", ")}`);
   if (team.month.missingCost) console.log(`No price: ${team.month.missingCost} model calls, dollars understated; the tokens limit is the fallback.`);
 } else {
