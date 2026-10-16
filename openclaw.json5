@@ -1,7 +1,7 @@
 // Spec → PR team config. Stage 3: lead → ba → architect → dev → qa; lead does the code review.
 // Stage 5 (partial): dev and qa also work on the web/admin admin UI (Node 24 in the sandbox, admin-ui-* skills).
 // Run: export OPENCLAW_CONFIG_PATH="$AGENT_TEAM_DIR/openclaw.json5" (see README).
-// Checked against the OpenClaw 2026.9.9 documentation (2026.9.9 is the first release with Claude Haiku 5.5).
+// Checked against the OpenClaw 2026.10.2 documentation (`openclaw config validate` passes; 2026.9.9 was the first release with Claude Haiku 5.5).
 {
   // Without gateway.mode the gateway refuses to start (openclaw gateway).
   // Gateway token from .env (setup.sh generates it): without it the Control UI (openclaw dashboard) asks for a token

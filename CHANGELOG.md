@@ -8,6 +8,11 @@ Commits: subject ≤ 72 characters and a body with a list of changes (template `
 ## [Unreleased]
 
 ### Changed
+- OpenClaw 2026.10.2 (was 2026.9.9), Slack plugin with it. The config validates unchanged; worth having: Anthropic API-key routes now use provider-native compaction, prompt-cache prefixes stay stable across gateway restarts and subagent completions (cheaper lead turns), and subagent answers are no longer truncated or lost to late delivery. `setup.sh` accepts Node 24.16+ or 26.1+, as 2026.10.2 requires. After pulling: README "Upgrading OpenClaw".
+
+### Fixed
+- `setup.sh` no longer breaks the Slack plugin: it installed `@openclaw/slack` against a temporary copy of the config, but OpenClaw keeps plugin files in `npm/` next to the config, so deleting the copy deleted the plugin ("install incomplete: plugin metadata is missing", Slack dead on 2026-10-08). It now installs with `--force` against the real `openclaw.json5`, puts the file back from a backup, and fails unless the plugin is `loaded` at the pinned version. `npm/` and OpenClaw's `openclaw.json5.*` backups are gitignored.
+
 - Stronger Anthropic models (Roman, 2026-10-13), in the `anthropic` and `claude-subscription` presets and `.env.example`: lead and ba on `claude-sonnet-5-5` (fallback `claude-haiku-5-5`), architect, dev and qa on `claude-opus-5-5` (fallback `claude-sonnet-5-5`). Lead's 64k context limit was tied to Haiku, so lead on Sonnet now runs with the full window and only the daily reset keeps its session small. On the API key dev and qa cost about twice as much per token, so their daily dollar limits in `budget.json` are reached sooner. After pulling: `./scripts/use-models.sh <anthropic|claude-subscription>`, restart the gateway.
 
 ### Added
