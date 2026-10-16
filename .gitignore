@@ -7,3 +7,7 @@ workspaces/*/skills/
 workspaces/*/state/
 # agents write their lessons here at runtime; starting copies in templates/memory/
 workspaces/*/MEMORY.md
+
+# OpenClaw puts plugin packages next to the config file (scripts/setup.sh, Slack plugin)
+/npm/
+/openclaw.json5.*

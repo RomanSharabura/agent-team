@@ -17,11 +17,12 @@ if [[ -z "${OPENCLAW_GATEWAY_TOKEN:-}" ]]; then
   echo "== Generated OPENCLAW_GATEWAY_TOKEN in .env"
 fi
 
-node -e 'const [a,b]=process.versions.node.split(".").map(Number); if(!((a===24&&b>=16)||a>=26)){console.error("Node >=24.16 required (current: "+process.version+")");process.exit(1)}'
+# OpenClaw 2026.10.2 engines: >=24.16.0 <25 || >=26.1.0 (Node 25 and 26.0 are refused by npm).
+node -e 'const [a,b]=process.versions.node.split(".").map(Number); if(!((a===24&&b>=16)||(a===26&&b>=1)||a>26)){console.error("Node 24.16+ or 26.1+ required (current: "+process.version+")");process.exit(1)}'
 command -v docker >/dev/null || { echo "docker not found (Rancher Desktop: enable dockerd/moby)"; exit 1; }
-# 2026.9.9 is the first release that knows Claude Haiku 5.5 (lead and ba). An older install is upgraded in place;
-# restart the gateway afterwards so it runs the new version.
-OPENCLAW_VERSION=2026.9.9
+# Pinned; 2026.9.9 is the oldest release that knows Claude Haiku 5.5. An older install is upgraded in place;
+# restart the gateway afterwards so it runs the new version. The Slack plugin below follows this pin.
+OPENCLAW_VERSION=2026.10.2
 if [[ "$(openclaw --version 2>/dev/null)" != *"$OPENCLAW_VERSION"* ]]; then
   echo "== Installing OpenClaw $OPENCLAW_VERSION"
   npm i -g "openclaw@$OPENCLAW_VERSION"
@@ -64,18 +65,26 @@ echo "== Skills into agent workspaces"
 ./scripts/sync-skills.sh
 
 echo "== Slack plugin"
-# plugins install/update also rewrite the config, so install against a temporary copy; plugins.entries.slack is already in openclaw.json5.
-slack_version="$(OPENCLAW_CONFIG_PATH="$PWD/openclaw.json5" openclaw plugins list --json 2>/dev/null \
-  | jq -r '(if type == "array" then . else .plugins end) | map(select(.id == "slack")) | .[0].version // empty' || true)"
-if [[ "$slack_version" != "$OPENCLAW_VERSION" ]]; then
-  tmpdir="$(mktemp -d)"
-  cp openclaw.json5 "$tmpdir/openclaw.json5"
-  if [[ -z "$slack_version" ]]; then
-    OPENCLAW_CONFIG_PATH="$tmpdir/openclaw.json5" openclaw plugins install "@openclaw/slack@$OPENCLAW_VERSION"
-  else
-    OPENCLAW_CONFIG_PATH="$tmpdir/openclaw.json5" openclaw plugins update "@openclaw/slack@$OPENCLAW_VERSION"
+# The plugin's files go to npm/ next to the config file, so install against the real openclaw.json5, never a temporary
+# copy: deleting the copy deleted the plugin, and on 2026-10-08 Slack died with "install incomplete: plugin metadata is
+# missing". The install rewrites openclaw.json5 as plain JSON, so it is put back from a backup afterwards
+# (OpenClaw's own openclaw.json5.bak*/.clobbered.* copies are gitignored).
+slack_state() {
+  openclaw plugins list --json 2>/dev/null \
+    | jq -r '(if type == "array" then . else .plugins end) | map(select(.id == "slack")) | .[0] | "\(.version // "")/\(.status // "")"' || true
+}
+export OPENCLAW_CONFIG_PATH="$PWD/openclaw.json5"
+if [[ "$(slack_state)" != "$OPENCLAW_VERSION/loaded" ]]; then
+  backup="$(mktemp)"
+  cp openclaw.json5 "$backup"
+  # --force also repairs a broken install (missing metadata) and replaces an older version.
+  if ! openclaw plugins install "@openclaw/slack@$OPENCLAW_VERSION" --force; then
+    cp "$backup" openclaw.json5; rm -f "$backup"
+    echo "Slack plugin install failed"; exit 1
   fi
-  rm -rf "$tmpdir"
+  cp "$backup" openclaw.json5; rm -f "$backup"
+  state="$(slack_state)"
+  [[ "$state" == "$OPENCLAW_VERSION/loaded" ]] || { echo "Slack plugin is '$state' after install, expected $OPENCLAW_VERSION/loaded"; exit 1; }
 fi
 
 echo "== Model keys into agent auth profiles"
@@ -97,7 +106,6 @@ rm -f "$tmpdir"/openclaw.json5*
 rmdir "$tmpdir"
 
 echo "== Validating config"
-export OPENCLAW_CONFIG_PATH="$PWD/openclaw.json5"
 openclaw config validate
 
 cat <<MSG
