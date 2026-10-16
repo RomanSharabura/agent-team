@@ -24,7 +24,7 @@ scripts/budget-guard.mjs spend tracking and team pause per budget.json
 
 ## What you need on the machine
 - **Windows:** run everything in WSL2 (Ubuntu 24.04) with Rancher Desktop WSL integration enabled. Clone the repo into `~/src`, not `/mnt/c`. Git Bash and PowerShell do not work for `setup.sh` and the sandbox mounts.
-- Node **24.16+** or **26.1+** (OpenClaw 2026.10.2 refuses Node 22, 25 and 26.0).
+- Node **24.16+** or **26.1+** (OpenClaw 2026.10 refuses Node 22, 25 and 26.0).
 - Rancher Desktop with the **dockerd (moby)** engine, so the `docker` command works.
 - `gh` and `jq` on the host (`sudo apt install gh jq`): OpenClaw checks the binaries a skill requires on the host, not in the sandbox, so without them lead does not see `pr-review`, `pipeline-resume` and `morning-briefing`.
 - A model API key (in `.env`), or a Claude Pro/Max/Team subscription (see [Three ways to pay](#three-ways-to-pay-openai-api-anthropic-api-claude-subscription)).
@@ -92,7 +92,7 @@ The team runs on one provider at a time, Anthropic by default; both sets are in 
 Since 2026-10-13 the Anthropic set is a tier above the OpenAI one: lead reviews code and ba validates specs on Sonnet, and the agents that write code and tests are on Opus. The fallback only fires on a rate limit or an outage, so a cheaper one is fine. On the API key this roughly doubles dev and qa spend per token; on the Claude subscription it uses the plan's limits faster.
 
 Notes:
-- **OpenClaw is pinned to 2026.10.2** in `scripts/setup.sh` (2026.9.9 is the oldest that works: 2026.9.8 doesn't know Claude Haiku 5.5). To change versions, see [Upgrading OpenClaw](#upgrading-openclaw).
+- **OpenClaw is pinned to 2026.10.4** in `scripts/setup.sh` (2026.9.9 is the oldest that works: 2026.9.8 doesn't know Claude Haiku 5.5). To change versions, see [Upgrading OpenClaw](#upgrading-openclaw).
 - **Fallback model.** Each agent has `model: { primary, fallbacks }` (the `*_FALLBACK_MODEL` variables). Anthropic counts rate limits separately per model class, so on a 429 OpenClaw, after a short retry, switches to the fallback instead of aborting the turn.
 - **Lead context.** The lead main session (Slack and all handoffs) used to grow without bound: every tool call sent it in full, hence ~59k tokens per request (on OpenAI it hit 200k TPM). Now sessions restart daily at 04:00 (`session.reset`), and Haiku 5.5 has a 64k active context limit (`models.providers.anthropic.models`), after which OpenClaw compacts the history. The limit is per model id, not per agent, so lead on Sonnet 5.5 runs with the full window: a Sonnet entry would also cap ba and the Sonnet fallback of architect, dev and qa. Only the daily reset keeps lead's session small now; if lead's requests grow large, add `{ id: "claude-sonnet-5-5", name: "Claude Sonnet 5.5", contextTokens: 200000 }` there.
 - **Prompt caching.** OpenClaw turns on Anthropic's 5-minute prompt cache by itself for the direct API; cache reads cost a tenth of input.
@@ -166,7 +166,7 @@ The version is the `OPENCLAW_VERSION` pin in `scripts/setup.sh`; the Slack plugi
 4. Start the gateway (`openclaw gateway --verbose`), then `openclaw sandbox recreate --all --force` so the containers come up under the new version.
 5. `openclaw channels status --probe` shows Slack connected; DM the bot "check the queue".
 
-The plugin's files live in `npm/` next to `openclaw.json5` (gitignored). An older `setup.sh` installed it against a temporary copy of the config and deleted it with the copy, which is what broke Slack on 2026-10-08.
+The plugin's files live in `npm/` next to `openclaw.json5` (gitignored). After OpenClaw writes `openclaw.json5` itself (a plugin install), it treats a later outside edit such as `git pull` as a clobber and puts back `openclaw.json5.bak` on the next command, so `setup.sh` deletes `openclaw.json5.bak*`. If `git diff openclaw.json5` ever shows changes you did not make, run `rm -f openclaw.json5.bak*` and `git checkout openclaw.json5`. An older `setup.sh` installed it against a temporary copy of the config and deleted it with the copy, which is what broke Slack on 2026-10-08.
 
 ## Moving to .NET 11 (preview)
 dopamine-shop targets .NET 11 RC1 and C# 15 (its ADR 0012), so the sandbox image needs the .NET 11 SDK. The image keeps the .NET 10 SDK too, for branches cut before the move.
@@ -200,6 +200,7 @@ dopamine-shop targets .NET 11 RC1 and C# 15 (its ADR 0012), so the sandbox image
 - An agent still answers in Ukrainian: `git pull`, restart the gateway, then start a fresh session (`/new` in the chat with the agent, or wait for the daily 04:00 reset). An old session keeps its Ukrainian history, and the model tends to continue in that language. Notes agents wrote earlier in `workspaces/<agent>/memory/` may also be Ukrainian; the Language rule in AGENTS.md overrides them, or delete them.
 - Two runs of one agent collided ("concurrent edits in the shared workspace", duplicated "architect: plan" comments): stop the gateway, then in `workspaces/<agent>/repos/dopamine-shop` save the stray edits with `git stash push -u -m collided-run` and reset to the branch on GitHub (`git fetch origin && git checkout <branch> && git reset --hard origin/<branch>`). Remove `workspaces/<agent>/state/run.lock` if it is there, start the gateway, and tell lead `Issue #N: continue`. The `workspace-lock` skill and the heartbeat rule "resume only `ai-blocked`" keep this from happening again.
 - `Plugin "slack" install incomplete: plugin metadata is missing`, or `openclaw channels status --probe` shows no Slack: rerun `./scripts/setup.sh`, which reinstalls the plugin with `--force` and checks it, then restart the gateway.
+- The gateway will not start: `Gateway state ownership is no longer current at ~/.openclaw/tmp/openclaw-<uid>/state.<hash>.lock: heartbeat clock moved backwards` (OpenClaw 2026.10.2 and 2026.10.3, at startup or mid-run; 2026.10.4 rides out clock jumps, so first check that `openclaw --version` says 2026.10.4). The lock file's timestamp is in the future, usually because the WSL clock jumped after the laptop slept. `pgrep -af openclaw` and kill every leftover process; if `ls ~/.openclaw/tmp/openclaw-$(id -u)/` still shows `*.lock` files, move them aside (`mkdir -p ~/openclaw-stale-locks && mv ~/.openclaw/tmp/openclaw-$(id -u)/*.lock ~/openclaw-stale-locks/`); then start the gateway again, which usually just works. If `date` is off from real time or the error comes back, run `wsl --shutdown` from PowerShell (Ubuntu 24.04 in WSL has no `hwclock`), restart Rancher Desktop, check `docker ps` lists agent-team-postgres, and start the gateway. Do not run `openclaw doctor`.
 - An agent says skills are unavailable in the sandbox: run `./scripts/sync-skills.sh` (after every `git pull` that changes `skills/`) and restart the gateway.
 
 ## .NET skills from Microsoft

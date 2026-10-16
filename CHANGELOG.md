@@ -8,6 +8,15 @@ Commits: subject ≤ 72 characters and a body with a list of changes (template `
 ## [Unreleased]
 
 ### Changed
+- OpenClaw 2026.10.4 (was 2026.10.2), Slack plugin with it. 2026.10.2 stopped the gateway whenever the WSL clock jumped backwards ("heartbeat clock moved backwards"), at startup and mid-run, killing an architect run on 2026-10-16; 2026.10.4 keeps running after sleep and clock jumps. The config validates unchanged. After pulling: README "Upgrading OpenClaw".
+
+### Fixed
+- `git pull` changes to `openclaw.json5` could be silently undone: once OpenClaw has written the file (the Slack plugin install), it treats an outside edit as a clobber and restores `openclaw.json5.bak` on the next CLI command. `setup.sh` now deletes `openclaw.json5.bak*` before running OpenClaw and after the plugin install. After pulling: `rm -f openclaw.json5.bak*`, `git checkout openclaw.json5`, then `./scripts/setup.sh`.
+
+### Added
+- README troubleshooting: what to do when the 2026.10 gateway refuses to start with "heartbeat clock moved backwards" (WSL clock jump after sleep, stale state lock). After pulling: nothing to do.
+
+### Changed
 - OpenClaw 2026.10.2 (was 2026.9.9), Slack plugin with it. The config validates unchanged; worth having: Anthropic API-key routes now use provider-native compaction, prompt-cache prefixes stay stable across gateway restarts and subagent completions (cheaper lead turns), and subagent answers are no longer truncated or lost to late delivery. `setup.sh` accepts Node 24.16+ or 26.1+, as 2026.10.2 requires. After pulling: README "Upgrading OpenClaw".
 
 ### Fixed
