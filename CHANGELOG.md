@@ -7,6 +7,9 @@ Commits: subject ≤ 72 characters and a body with a list of changes (template `
 
 ## [Unreleased]
 
+### Added
+- README troubleshooting: what to do when the 2026.10 gateway refuses to start with "heartbeat clock moved backwards" (WSL clock jump after sleep, stale state lock). After pulling: nothing to do.
+
 ### Changed
 - OpenClaw 2026.10.2 (was 2026.9.9), Slack plugin with it. The config validates unchanged; worth having: Anthropic API-key routes now use provider-native compaction, prompt-cache prefixes stay stable across gateway restarts and subagent completions (cheaper lead turns), and subagent answers are no longer truncated or lost to late delivery. `setup.sh` accepts Node 24.16+ or 26.1+, as 2026.10.2 requires. After pulling: README "Upgrading OpenClaw".
 
