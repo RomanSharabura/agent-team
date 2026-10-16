@@ -75,7 +75,7 @@ for agent in "${agents[@]}"; do
     else
       profile="$provider:manual"
       key_var="${provider^^}_API_KEY"
-      printf "%s\n" "${!key_var}" | oc models auth paste-api-key --provider "$provider" --agent "$agent"
+      printf "%s\n" "${!key_var}" | oc models auth paste-api-key --provider "$provider" --agent "$agent" --profile-id "$profile"
     fi
     oc models auth order set --provider "$provider" --agent "$agent" "$profile"
   done

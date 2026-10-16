@@ -97,16 +97,18 @@ fi
 echo "== Model keys into agent auth profiles"
 # OpenClaw takes the agents' key not from an environment variable but from each agent's auth profile.
 # paste-api-key rewrites the config, so give it a temporary copy to leave openclaw.json5 untouched.
+# --profile-id keeps the key in each agent's own profile. Without it, OpenClaw 2026.10 targets the shared key of the
+# models.providers entry and refuses with "An agent already overrides this shared key" once an agent has its own.
 # Subscription only (no API key): use-models.sh claude-subscription puts the setup token in instead.
 [[ -n "${OPENAI_API_KEY:-}${ANTHROPIC_API_KEY:-}${ANTHROPIC_SETUP_TOKEN:-}" ]] || { echo "Set OPENAI_API_KEY, ANTHROPIC_API_KEY or ANTHROPIC_SETUP_TOKEN in .env"; exit 1; }
 tmpdir="$(mktemp -d)"
 cp openclaw.json5 "$tmpdir/openclaw.json5"
 for agent in lead ba architect dev qa; do
   if [[ -n "${OPENAI_API_KEY:-}" ]]; then
-    printf "%s\n" "$OPENAI_API_KEY" | OPENCLAW_CONFIG_PATH="$tmpdir/openclaw.json5" openclaw models auth paste-api-key --provider openai --agent "$agent"
+    printf "%s\n" "$OPENAI_API_KEY" | OPENCLAW_CONFIG_PATH="$tmpdir/openclaw.json5" openclaw models auth paste-api-key --provider openai --agent "$agent" --profile-id openai:manual
   fi
   if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
-    printf "%s\n" "$ANTHROPIC_API_KEY" | OPENCLAW_CONFIG_PATH="$tmpdir/openclaw.json5" openclaw models auth paste-api-key --provider anthropic --agent "$agent"
+    printf "%s\n" "$ANTHROPIC_API_KEY" | OPENCLAW_CONFIG_PATH="$tmpdir/openclaw.json5" openclaw models auth paste-api-key --provider anthropic --agent "$agent" --profile-id anthropic:manual
   fi
 done
 rm -f "$tmpdir"/openclaw.json5*
