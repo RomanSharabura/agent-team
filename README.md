@@ -24,7 +24,7 @@ scripts/budget-guard.mjs spend tracking and team pause per budget.json
 
 ## What you need on the machine
 - **Windows:** run everything in WSL2 (Ubuntu 24.04) with Rancher Desktop WSL integration enabled. Clone the repo into `~/src`, not `/mnt/c`. Git Bash and PowerShell do not work for `setup.sh` and the sandbox mounts.
-- Node **24.16+** or **26.1+** (OpenClaw 2026.10.2 refuses Node 22, 25 and 26.0).
+- Node **24.16+** or **26.1+** (OpenClaw 2026.10 refuses Node 22, 25 and 26.0).
 - Rancher Desktop with the **dockerd (moby)** engine, so the `docker` command works.
 - `gh` and `jq` on the host (`sudo apt install gh jq`): OpenClaw checks the binaries a skill requires on the host, not in the sandbox, so without them lead does not see `pr-review`, `pipeline-resume` and `morning-briefing`.
 - A model API key (in `.env`), or a Claude Pro/Max/Team subscription (see [Three ways to pay](#three-ways-to-pay-openai-api-anthropic-api-claude-subscription)).
@@ -92,7 +92,7 @@ The team runs on one provider at a time, Anthropic by default; both sets are in 
 Since 2026-10-13 the Anthropic set is a tier above the OpenAI one: lead reviews code and ba validates specs on Sonnet, and the agents that write code and tests are on Opus. The fallback only fires on a rate limit or an outage, so a cheaper one is fine. On the API key this roughly doubles dev and qa spend per token; on the Claude subscription it uses the plan's limits faster.
 
 Notes:
-- **OpenClaw is pinned to 2026.10.2** in `scripts/setup.sh` (2026.9.9 is the oldest that works: 2026.9.8 doesn't know Claude Haiku 5.5). To change versions, see [Upgrading OpenClaw](#upgrading-openclaw).
+- **OpenClaw is pinned to 2026.10.4** in `scripts/setup.sh` (2026.9.9 is the oldest that works: 2026.9.8 doesn't know Claude Haiku 5.5). To change versions, see [Upgrading OpenClaw](#upgrading-openclaw).
 - **Fallback model.** Each agent has `model: { primary, fallbacks }` (the `*_FALLBACK_MODEL` variables). Anthropic counts rate limits separately per model class, so on a 429 OpenClaw, after a short retry, switches to the fallback instead of aborting the turn.
 - **Lead context.** The lead main session (Slack and all handoffs) used to grow without bound: every tool call sent it in full, hence ~59k tokens per request (on OpenAI it hit 200k TPM). Now sessions restart daily at 04:00 (`session.reset`), and Haiku 5.5 has a 64k active context limit (`models.providers.anthropic.models`), after which OpenClaw compacts the history. The limit is per model id, not per agent, so lead on Sonnet 5.5 runs with the full window: a Sonnet entry would also cap ba and the Sonnet fallback of architect, dev and qa. Only the daily reset keeps lead's session small now; if lead's requests grow large, add `{ id: "claude-sonnet-5-5", name: "Claude Sonnet 5.5", contextTokens: 200000 }` there.
 - **Prompt caching.** OpenClaw turns on Anthropic's 5-minute prompt cache by itself for the direct API; cache reads cost a tenth of input.

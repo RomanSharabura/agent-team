@@ -6,6 +6,12 @@ cd "$(dirname "$0")/.."
 [[ -f .env ]] || { echo "Create .env from .env.example"; exit 1; }
 set -a; source .env; set +a
 
+# After OpenClaw itself writes openclaw.json5 (plugins install), it treats any later outside edit, such as a git pull,
+# as a clobber and silently puts back its openclaw.json5.bak on the next command. The file in git is the source of
+# truth, so drop OpenClaw's backup ring before any openclaw command reads the config.
+drop_config_backups() { rm -f openclaw.json5.bak openclaw.json5.bak.*; }
+drop_config_backups
+
 if [[ -z "${OPENCLAW_GATEWAY_TOKEN:-}" ]]; then
   OPENCLAW_GATEWAY_TOKEN="$(node -e 'console.log(require("crypto").randomBytes(24).toString("hex"))')"
   if grep -q '^OPENCLAW_GATEWAY_TOKEN=' .env; then
@@ -22,7 +28,7 @@ node -e 'const [a,b]=process.versions.node.split(".").map(Number); if(!((a===24&
 command -v docker >/dev/null || { echo "docker not found (Rancher Desktop: enable dockerd/moby)"; exit 1; }
 # Pinned; 2026.9.9 is the oldest release that knows Claude Haiku 5.5. An older install is upgraded in place;
 # restart the gateway afterwards so it runs the new version. The Slack plugin below follows this pin.
-OPENCLAW_VERSION=2026.10.2
+OPENCLAW_VERSION=2026.10.4
 if [[ "$(openclaw --version 2>/dev/null)" != *"$OPENCLAW_VERSION"* ]]; then
   echo "== Installing OpenClaw $OPENCLAW_VERSION"
   npm i -g "openclaw@$OPENCLAW_VERSION"
@@ -79,10 +85,11 @@ if [[ "$(slack_state)" != "$OPENCLAW_VERSION/loaded" ]]; then
   cp openclaw.json5 "$backup"
   # --force also repairs a broken install (missing metadata) and replaces an older version.
   if ! openclaw plugins install "@openclaw/slack@$OPENCLAW_VERSION" --force; then
-    cp "$backup" openclaw.json5; rm -f "$backup"
+    cp "$backup" openclaw.json5; rm -f "$backup"; drop_config_backups
     echo "Slack plugin install failed"; exit 1
   fi
   cp "$backup" openclaw.json5; rm -f "$backup"
+  drop_config_backups
   state="$(slack_state)"
   [[ "$state" == "$OPENCLAW_VERSION/loaded" ]] || { echo "Slack plugin is '$state' after install, expected $OPENCLAW_VERSION/loaded"; exit 1; }
 fi
