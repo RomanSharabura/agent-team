@@ -7,6 +7,9 @@ Commits: subject ≤ 72 characters and a body with a list of changes (template `
 
 ## [Unreleased]
 
+### Fixed
+- `setup.sh` and `use-models.sh` no longer stop with "An agent already overrides this shared key" on OpenClaw 2026.10: without `--profile-id`, `paste-api-key` now writes the shared key of the `models.providers` entry and refuses when an agent already has its own `<provider>:manual` profile (every agent does, from earlier runs). Both scripts pass `--profile-id <provider>:manual`, keeping the key per agent as before. After pulling: `./scripts/setup.sh`.
+
 ### Changed
 - OpenClaw 2026.10.4 (was 2026.10.2), Slack plugin with it. 2026.10.2 stopped the gateway whenever the WSL clock jumped backwards ("heartbeat clock moved backwards"), at startup and mid-run, killing an architect run on 2026-10-16; 2026.10.4 keeps running after sleep and clock jumps. The config validates unchanged. After pulling: README "Upgrading OpenClaw".
 

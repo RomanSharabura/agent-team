@@ -189,12 +189,12 @@ dopamine-shop targets .NET 11 RC1 and C# 15 (its ADR 0012), so the sandbox image
 ## Moving from stage 1
 1. `git pull && ./scripts/sync-skills.sh`
 2. In `.env`, add `QA_MODEL` and `GH_TOKEN_QA` (see `.env.example`).
-3. Model key for qa: `./scripts/setup.sh` or `printf "%s\n" "$ANTHROPIC_API_KEY" | openclaw models auth paste-api-key --provider anthropic --agent qa` on a temporary copy of the config.
+3. Model key for qa: `./scripts/setup.sh` or `printf "%s\n" "$ANTHROPIC_API_KEY" | openclaw models auth paste-api-key --provider anthropic --agent qa --profile-id anthropic:manual` on a temporary copy of the config.
 4. Restart the gateway.
 
 ## Troubleshooting
 - The Control UI asks for a "Gateway secret", or `openclaw logs` prints `requires credentials`: `.env` has no `OPENCLAW_GATEWAY_TOKEN`. Run `./scripts/setup.sh` (generates the token), `set -a; source .env; set +a`, and restart the gateway. Then `openclaw dashboard --no-open` gives a link with a one-time login. Do not run `openclaw doctor` on `openclaw.json5`: it rewrites the file.
-- `No route-compatible authentication source`: the model key is not in the agent's auth profile. Rerun `./scripts/setup.sh` with a filled-in `.env` (or `printf "%s\n" "$ANTHROPIC_API_KEY" | openclaw models auth paste-api-key --provider anthropic --agent lead`, and the same for `ba`, `architect`, `dev`, and `qa`).
+- `No route-compatible authentication source`: the model key is not in the agent's auth profile. Rerun `./scripts/setup.sh` with a filled-in `.env` (or `printf "%s\n" "$ANTHROPIC_API_KEY" | openclaw models auth paste-api-key --provider anthropic --agent lead --profile-id anthropic:manual`, and the same for `ba`, `architect`, `dev`, and `qa`).
 - `agents/main/agent` instead of `agents/lead/agent` in the output: `.env` and `OPENCLAW_CONFIG_PATH` are not loaded in this tab.
 - `Gateway not reachable`: the gateway is stopped; run `openclaw gateway --verbose` or use `openclaw agent --local ...`.
 - An agent still answers in Ukrainian: `git pull`, restart the gateway, then start a fresh session (`/new` in the chat with the agent, or wait for the daily 04:00 reset). An old session keeps its Ukrainian history, and the model tends to continue in that language. Notes agents wrote earlier in `workspaces/<agent>/memory/` may also be Ukrainian; the Language rule in AGENTS.md overrides them, or delete them.
