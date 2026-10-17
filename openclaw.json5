@@ -171,8 +171,15 @@
     toolSearch: false,
   },
   // The Slack channel is a separate plugin (its package is installed by scripts/setup.sh).
+  // memory-core dreaming is on by default since 2026.10: a nightly model run that rewrites each
+  // agent's MEMORY.md from its sessions. Pipeline state lives in GitHub and MEMORY.md starts from
+  // templates/memory, so we keep it off: no extra model calls, no rewritten memory. Enabled with no owner it also logs
+  // "dreaming cron reconcile failed: Agent-less cron job has no resolvable owner" every minute.
   plugins: {
-    entries: { slack: { enabled: true } },
+    entries: {
+      slack: { enabled: true },
+      "memory-core": { config: { dreaming: { enabled: false } } },
+    },
   },
   commands: {
     ownerAllowFrom: ["slack:${SLACK_OWNER_ID}"],
