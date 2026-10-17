@@ -8,6 +8,9 @@ Commits: subject ≤ 72 characters and a body with a list of changes (template `
 ## [Unreleased]
 
 ### Fixed
+- The gateway no longer logs "memory-core: dreaming cron reconcile failed: Agent-less cron job has no resolvable owner" every minute. Dreaming (memory-core's nightly model run that rewrites each agent's MEMORY.md, on by default in 2026.10) is turned off in `openclaw.json5`: pipeline state lives in GitHub, and it would add model calls and rewrite agents' memory. After pulling: restart the gateway.
+
+### Fixed
 - `setup.sh` and `use-models.sh` no longer stop with "An agent already overrides this shared key" on OpenClaw 2026.10: without `--profile-id`, `paste-api-key` now writes the shared key of the `models.providers` entry and refuses when an agent already has its own `<provider>:manual` profile (every agent does, from earlier runs). Both scripts pass `--profile-id <provider>:manual`, keeping the key per agent as before. After pulling: `./scripts/setup.sh`.
 
 ### Changed
